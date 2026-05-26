@@ -2914,6 +2914,11 @@
             <i class="fas fa-envelope-open-text" style="font-size:60px;color:var(--red-primary);margin-bottom:20px;"></i>
             <h2>تأكيد البريد الإلكتروني</h2>
             <p style="margin:15px 0;">تم إرسال رسالة تأكيد إلى بريدك الإلكتروني.<br>يرجى فتح الرسالة والضغط على رابط التأكيد.</p>
+            <div style="background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.2);border-radius:10px;padding:12px;margin:12px 0;text-align:right;">
+                <p style="margin:0 0 6px;font-size:13px;color:var(--gray-300);"><i class="fas fa-exclamation-circle" style="color:var(--red-primary);margin-left:5px;"></i> إذا لم تجد الرسالة في البريد الوارد:</p>
+                <p style="margin:0 0 4px;font-size:12px;color:var(--gray-400);">• تحقق من مجلد <strong style="color:var(--red-primary);">البريد غير المرغوب (Spam)</strong></p>
+                <p style="margin:0;font-size:12px;color:var(--gray-400);">• قد تستغرق الرسالة من <strong>1 إلى 5 دقائق</strong> للوصول</p>
+            </div>
             <p id="verifyEmailAddress" style="color:var(--red-primary);font-weight:700;font-size:1.1rem;margin:10px 0;"></p>
             <button class="button button--cta" id="resendVerifyBtn" style="width:100%;margin-top:15px;"><i class="fas fa-paper-plane"></i> إعادة إرسال رسالة التأكيد</button>
             <button class="button button--outline" id="checkVerifyBtn" style="width:100%;margin-top:10px;"><i class="fas fa-check-circle"></i> لقد أكدت الإيميل - تحقق الآن</button>
@@ -3416,8 +3421,24 @@
     /* ====================================================================
        جافاسكربت - دوال السلة (بدون قيود على الإضافة)
        ==================================================================== */
-        function loadCart() { const saved = localStorage.getItem('ohstore_cart'); if (saved) cart = JSON.parse(saved); updateCartUI(); }
-        function saveCart() { localStorage.setItem('ohstore_cart', JSON.stringify(cart)); }
+        function loadCart() {
+            const user = typeof auth !== 'undefined' ? auth.currentUser : null;
+            if (user && user.emailVerified) {
+                db.collection('users').doc(user.uid).collection('cart').doc('items').get().then(doc => {
+                    if (doc.exists && doc.data().items) { cart = doc.data().items; } else { cart = []; }
+                    updateCartUI(); updateAllAddButtons();
+                }).catch(() => { cart = []; updateCartUI(); });
+            } else {
+                cart = [];
+                updateCartUI();
+            }
+        }
+        function saveCart() {
+            const user = typeof auth !== 'undefined' ? auth.currentUser : null;
+            if (user && user.emailVerified) {
+                db.collection('users').doc(user.uid).collection('cart').doc('items').set({ items: cart }).catch(err => console.warn('Cart save error:', err));
+            }
+        }
         
         function updateCartUI() {
             const itemsDiv = document.getElementById('cartItems'); 
@@ -3603,8 +3624,24 @@
             });
         }
         
+        function requireAuth() {
+            const user = typeof auth !== 'undefined' ? auth.currentUser : null;
+            if (!user) {
+                showNotification('يجب إنشاء حساب أولاً لإضافة منتجات للسلة', 'warning');
+                setTimeout(() => { document.getElementById('signupPage').classList.add('active'); document.body.style.overflow = 'hidden'; }, 500);
+                return false;
+            }
+            if (!user.emailVerified) {
+                showNotification('يجب تأكيد بريدك الإلكتروني أولاً', 'warning');
+                document.getElementById('verifyEmailAddress').textContent = user.email;
+                setTimeout(() => { document.getElementById('verifyEmailPage').classList.add('active'); document.body.style.overflow = 'hidden'; }, 500);
+                return false;
+            }
+            return true;
+        }
         function addProductToCart(productId, productName, productPrice, productOs, btnElement) {
             if (!termsAccepted) { showTermsModal(); showNotification('يجب قبول الشروط أولاً', 'warning'); return false; }
+            if (!requireAuth()) return false;
             if (isProductInCart(productId)) { showNotification('هذا المنتج مضاف للسلة بالفعل! يمكنك زيادة الكمية من السلة', 'warning'); return false; }
             
             cart.push({ type: 'product', id: productId, uniqueId: Date.now() + '_' + Math.random() + '_' + productId, displayName: `${productName} (${productOs})`, price: productPrice, quantity: 1 });
@@ -3628,6 +3665,7 @@
         
         function addServiceToCart(serviceId, serviceName, servicePrice, btnElement) {
             if (!termsAccepted) { showTermsModal(); showNotification('يجب قبول الشروط أولاً', 'warning'); return false; }
+            if (!requireAuth()) return false;
             if (isServiceInCart(serviceId)) { showNotification('هذه الخدمة مضافة للسلة بالفعل!', 'warning'); return false; }
             
             cart.push({ type: 'service', id: serviceId, uniqueId: Date.now() + '_' + Math.random() + '_' + serviceId, displayName: serviceName, price: servicePrice, quantity: 1 });
@@ -3650,6 +3688,7 @@
         
         function addBundleToCart(bundle, btnElement) {
             if (!termsAccepted) { showTermsModal(); showNotification('يجب قبول الشروط أولاً', 'warning'); return; }
+            if (!requireAuth()) return;
             if (isBundleInCart(bundle.id)) { showNotification('هذه الحزمة مضافة للسلة بالفعل! يمكنك زيادة الكمية من السلة', 'warning'); return; }
             
             cart.push({ type: 'bundle', id: bundle.id, uniqueId: Date.now() + '_' + Math.random() + '_' + bundle.id, displayName: `حزمة ${bundle.name}`, price: bundle.price, quantity: 1, productIds: bundle.productIds });
@@ -3859,6 +3898,7 @@
         // ========== SPECIAL 2+1 OFFER ==========
         function handleSpecialBundle() {
             if (!termsAccepted) { showTermsModal(); showNotification('يجب قبول الشروط أولاً', 'warning'); return; }
+            if (!requireAuth()) return;
             selectedStep1Products = []; selectedFreeProduct = null;
             renderStep1Products();
             document.getElementById('specialModal').classList.add('active');
@@ -4037,6 +4077,7 @@
             const checkoutBtn = document.getElementById('checkoutBtn'); const contactModal = document.getElementById('contactModal'); const cancel = document.getElementById('cancelContact'); const confirm = document.getElementById('confirmContact'); const input = document.getElementById('contactMethod');
             checkoutBtn.addEventListener('click', () => {
                 if (!termsAccepted) { showTermsModal(); showNotification('يجب قبول الشروط أولاً', 'warning'); return; }
+                if (!requireAuth()) return;
                 if (cart.length === 0) { showNotification('السلة فارغة!', 'warning'); return; }
                 input.value = ''; contactModal.classList.add('active');
             });
@@ -4431,25 +4472,31 @@
         }
         function loadPurchaseHistory(uid) {
             const list = document.getElementById('profilePurchasesList');
-            const purchases = JSON.parse(localStorage.getItem('purchases_' + uid) || '[]');
-            if (purchases.length === 0) {
+            list.innerHTML = '<div class="profile-purchases-empty"><i class="fas fa-spinner fa-spin" style="font-size:24px;color:var(--gray-500);"></i></div>';
+            db.collection('users').doc(uid).collection('purchases').orderBy('date', 'desc').get().then(snapshot => {
+                if (snapshot.empty) {
+                    list.innerHTML = '<div class="profile-purchases-empty"><i class="fas fa-box-open" style="font-size:30px;margin-bottom:10px;display:block;color:var(--gray-500);"></i>لا توجد مشتريات سابقة</div>';
+                    return;
+                }
+                let html = '';
+                snapshot.forEach(doc => {
+                    const p = doc.data();
+                    const d = p.date && p.date.toDate ? p.date.toDate() : new Date(p.date);
+                    const dateStr = d.toLocaleDateString('ar-EG', {year:'numeric',month:'short',day:'numeric'});
+                    html += '<div class="profile-purchase-item"><div><span class="purchase-name">' + p.name + '</span><br><span class="purchase-date">' + dateStr + '</span></div><div class="purchase-price">' + (p.price > 0 ? p.price + ' ₪' : 'مجاني 🎁') + '</div></div>';
+                });
+                list.innerHTML = html;
+            }).catch(() => {
                 list.innerHTML = '<div class="profile-purchases-empty"><i class="fas fa-box-open" style="font-size:30px;margin-bottom:10px;display:block;color:var(--gray-500);"></i>لا توجد مشتريات سابقة</div>';
-                return;
-            }
-            let html = '';
-            purchases.forEach(p => {
-                const d = new Date(p.date);
-                const dateStr = d.toLocaleDateString('ar-EG', {year:'numeric',month:'short',day:'numeric'});
-                html += '<div class="profile-purchase-item"><div><span class="purchase-name">' + p.name + '</span><br><span class="purchase-date">' + dateStr + '</span></div><div class="purchase-price">' + (p.price > 0 ? p.price + ' ₪' : 'مجاني 🎁') + '</div></div>';
             });
-            list.innerHTML = html;
         }
         function savePurchaseHistory(uid, cartItems) {
-            const purchases = JSON.parse(localStorage.getItem('purchases_' + uid) || '[]');
+            const batch = db.batch();
             cartItems.forEach(item => {
-                purchases.push({ name: item.displayName, price: item.price, date: new Date().toISOString() });
+                const ref = db.collection('users').doc(uid).collection('purchases').doc();
+                batch.set(ref, { name: item.displayName, price: item.price, date: firebase.firestore.FieldValue.serverTimestamp() });
             });
-            localStorage.setItem('purchases_' + uid, JSON.stringify(purchases));
+            batch.commit().catch(err => console.warn('Purchase save error:', err));
         }
         document.getElementById('profileClose').addEventListener('click', () => {
             document.getElementById('profilePage').classList.remove('active');
@@ -4470,6 +4517,13 @@
         // مراقبة حالة تسجيل الدخول
         auth.onAuthStateChanged(user => {
             updateNavUserState(user);
+            if (user && user.emailVerified) {
+                loadCart();
+            } else {
+                cart = [];
+                updateCartUI();
+                updateAllAddButtons();
+            }
         });
 
         // إنشاء حساب جديد
@@ -4520,7 +4574,7 @@
                 document.getElementById('verifyEmailAddress').textContent = email;
                 document.getElementById('verifyEmailPage').classList.add('active');
 
-                showNotification('تم إنشاء الحساب! تحقق من بريدك الإلكتروني', 'success');
+                showNotification('تم إنشاء الحساب! تحقق من بريدك الإلكتروني (أو مجلد Spam)', 'success');
 
                 // مسح الحقول
                 document.getElementById('signupFullName').value = '';
@@ -4560,12 +4614,12 @@
                     document.getElementById('loginPage').classList.remove('active');
                     document.getElementById('verifyEmailAddress').textContent = email;
                     document.getElementById('verifyEmailPage').classList.add('active');
-                    showNotification('يرجى تأكيد بريدك الإلكتروني أولاً', 'warning');
+                    showNotification('يرجى تأكيد بريدك الإلكتروني أولاً (تحقق من Spam إذا لم تجد الرسالة)', 'warning');
                 } else {
                     // تسجيل دخول ناجح
                     document.getElementById('loginPage').classList.remove('active');
                     document.body.style.overflow = '';
-                    showNotification(`مرحباً بك مجدداً!`, 'success');
+                    showNotification('مرحباً بك مجدداً! تم تحميل سلتك ومشترياتك', 'success');
 
                     // تحديث حالة التأكيد في Firestore
                     await db.collection('users').doc(user.uid).update({ emailVerified: true });
