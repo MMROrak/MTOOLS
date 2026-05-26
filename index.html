@@ -3367,6 +3367,10 @@
     /* ====================================================================
        جافاسكربت - دوال الإضافة للسلة (مع منع التكرار)
        ==================================================================== */
+        function getProductImage(name, os) {
+            return (name + os).toLowerCase().replace(/\s+/g, '') + '.png';
+        }
+        
         function isProductInCart(productId) {
             return cart.some(item => item.type === 'product' && item.id === productId);
         }
@@ -3496,7 +3500,7 @@
             if (!termsAccepted) { showTermsModal(); showNotification('يجب قبول الشروط أولاً', 'warning'); return; }
             currentModalProduct = product;
             currentModalService = null;
-            document.getElementById('modalIcon').innerHTML = `<img src="pic.png" style="width:70px; height:70px; object-fit:contain;">`;
+            document.getElementById('modalIcon').innerHTML = `<img src="${getProductImage(product.name, product.os)}" style="width:70px; height:70px; object-fit:contain;">`;
             document.getElementById('modalTitle').textContent = `${product.name} (${product.os})`;
             document.getElementById('modalDesc').textContent = product.desc;
             document.getElementById('modalPrice').innerHTML = `${product.price} ₪ <small>/ ترخيص دائم</small>`;
@@ -3648,7 +3652,7 @@
                     const card = document.createElement('div'); card.className = 'col-md-4';
                     card.innerHTML = `
                         <div class="product-card">
-                            <div class="product-icon"><img src="pic.png" alt="${p.name}"></div>
+                            <div class="product-icon"><img src="${getProductImage(p.name, p.os)}" alt="${p.name}"></div>
                             <div class="product-content">
                                 <div class="product-os"><i class="fas fa-mobile-alt"></i> ${p.os}</div>
                                 <h3 class="product-title">${p.name}</h3>
