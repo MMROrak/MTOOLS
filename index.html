@@ -13,6 +13,11 @@
     <!-- ==================== أيقونات فونت أوسم ==================== -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
+    <!-- ==================== Firebase ==================== -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
     <style>
     /* ====================================================================
        القسم 1: المتغيرات والأساسيات
@@ -2710,7 +2715,11 @@
 
             <div class="navbar-actions">
                 <button class="navbar-user-btn" id="navUserBtn" title="تسجيل الدخول">
-                    <i class="fas fa-user"></i>
+                    <i class="fas fa-user" id="navUserIcon"></i>
+                    <span id="navUserName" style="display:none;font-size:12px;margin-right:5px;"></span>
+                </button>
+                <button class="navbar-user-btn" id="navLogoutBtn" title="تسجيل الخروج" style="display:none;">
+                    <i class="fas fa-sign-out-alt"></i>
                 </button>
                 <button class="navbar-cart-btn" id="navCartBtn" title="السلة">
                     <i class="fas fa-shopping-cart"></i>
@@ -2728,13 +2737,14 @@
             <p>أدخل بياناتك للوصول إلى حسابك</p>
             <div class="form-group">
                 <label><i class="fas fa-envelope"></i> البريد الإلكتروني</label>
-                <input type="email" placeholder="example@email.com">
+                <input type="email" id="loginEmail" placeholder="example@email.com">
             </div>
             <div class="form-group">
                 <label><i class="fas fa-lock"></i> كلمة المرور</label>
-                <input type="password" placeholder="••••••••">
+                <input type="password" id="loginPassword" placeholder="••••••••">
             </div>
-            <button class="button button--cta" style="width:100%; margin-top:10px;"><i class="fas fa-sign-in-alt"></i> دخول</button>
+            <div id="loginError" style="color:#e63946;font-size:13px;margin-top:8px;display:none;"></div>
+            <button class="button button--cta" id="loginBtn" style="width:100%; margin-top:10px;"><i class="fas fa-sign-in-alt"></i> دخول</button>
             <p class="auth-switch">ليس لديك حساب؟ <span id="switchToSignup">إنشاء حساب جديد</span></p>
         </div>
     </div>
@@ -2769,8 +2779,23 @@
                 <label><i class="fas fa-lock"></i> تأكيد كلمة المرور</label>
                 <input type="password" id="signupPasswordConfirm" placeholder="أعد إدخال كلمة المرور">
             </div>
+            <div id="signupError" style="color:#e63946;font-size:13px;margin-top:8px;display:none;"></div>
             <button class="button button--cta" id="signupSubmitBtn" style="width:100%; margin-top:10px;"><i class="fas fa-user-plus"></i> إنشاء الحساب</button>
             <p class="auth-switch">لديك حساب بالفعل؟ <span id="switchToLogin">تسجيل الدخول</span></p>
+        </div>
+    </div>
+
+    <!-- ==================== صفحة تأكيد الإيميل ==================== -->
+    <div class="login-page" id="verifyEmailPage">
+        <div class="login-container" style="text-align:center;">
+            <span class="login-close" id="verifyEmailClose">&times;</span>
+            <i class="fas fa-envelope-open-text" style="font-size:60px;color:var(--red-primary);margin-bottom:20px;"></i>
+            <h2>تأكيد البريد الإلكتروني</h2>
+            <p style="margin:15px 0;">تم إرسال رسالة تأكيد إلى بريدك الإلكتروني.<br>يرجى فتح الرسالة والضغط على رابط التأكيد.</p>
+            <p id="verifyEmailAddress" style="color:var(--red-primary);font-weight:700;font-size:1.1rem;margin:10px 0;"></p>
+            <button class="button button--cta" id="resendVerifyBtn" style="width:100%;margin-top:15px;"><i class="fas fa-paper-plane"></i> إعادة إرسال رسالة التأكيد</button>
+            <button class="button button--outline" id="checkVerifyBtn" style="width:100%;margin-top:10px;"><i class="fas fa-check-circle"></i> لقد أكدت الإيميل - تحقق الآن</button>
+            <div id="verifyError" style="color:#e63946;font-size:13px;margin-top:8px;display:none;"></div>
         </div>
     </div>
 
@@ -3979,8 +4004,10 @@
                 openCart();
             });
             
-            // Navbar user button opens login
+            // Navbar user button opens login (if not logged in)
             document.getElementById('navUserBtn').addEventListener('click', () => {
+                const user = typeof auth !== 'undefined' ? auth.currentUser : null;
+                if (user && user.emailVerified) return;
                 document.getElementById('loginPage').classList.add('active');
                 document.body.style.overflow = 'hidden';
             });
@@ -4145,6 +4172,250 @@
             await sendToTelegram(`👤 <b>زائر جديد دخل الموقع</b>\n🌍 IP: ${ip}\n💻 ${device.device} | ${device.os}\n⏰ ${new Date().toLocaleString('ar-EG')}`);
         }, 1500);
         setTimeout(() => { if (!termsAccepted) showTermsModal(); }, 500);
+
+    /* ====================================================================
+       جافاسكربت - Firebase: تسجيل الدخول وإنشاء الحسابات
+       ==================================================================== */
+        const firebaseConfig = {
+            apiKey: "AIzaSyALlwGa1NaBBwOQEgdymf1YDfo9nxE060Q",
+            authDomain: "rootzone-79baf.firebaseapp.com",
+            projectId: "rootzone-79baf",
+            storageBucket: "rootzone-79baf.firebasestorage.app",
+            messagingSenderId: "58185916945",
+            appId: "1:58185916945:web:dad15fa4df9418b08b87b0",
+            measurementId: "G-XZLX64JGBL"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        auth.languageCode = 'ar';
+
+        function firebaseErrorMsg(code) {
+            const msgs = {
+                'auth/email-already-in-use': 'هذا البريد الإلكتروني مستخدم بالفعل',
+                'auth/invalid-email': 'البريد الإلكتروني غير صالح',
+                'auth/weak-password': 'كلمة المرور ضعيفة - يجب أن تكون 6 أحرف على الأقل',
+                'auth/user-not-found': 'لا يوجد حساب بهذا البريد الإلكتروني',
+                'auth/wrong-password': 'كلمة المرور غير صحيحة',
+                'auth/invalid-credential': 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
+                'auth/too-many-requests': 'محاولات كثيرة جداً. حاول لاحقاً',
+                'auth/network-request-failed': 'مشكلة في الاتصال بالإنترنت'
+            };
+            return msgs[code] || 'حدث خطأ غير متوقع. حاول مرة أخرى';
+        }
+
+        function showAuthError(elementId, msg) {
+            const el = document.getElementById(elementId);
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+        function hideAuthError(elementId) {
+            document.getElementById(elementId).style.display = 'none';
+        }
+
+        function updateNavUserState(user) {
+            const navUserBtn = document.getElementById('navUserBtn');
+            const navLogoutBtn = document.getElementById('navLogoutBtn');
+            const navUserName = document.getElementById('navUserName');
+            const navUserIcon = document.getElementById('navUserIcon');
+            if (user && user.emailVerified) {
+                db.collection('users').doc(user.uid).get().then(doc => {
+                    const data = doc.exists ? doc.data() : {};
+                    const displayName = data.fullName || data.username || user.email.split('@')[0];
+                    navUserName.textContent = displayName;
+                    navUserName.style.display = 'inline';
+                    navUserIcon.className = 'fas fa-user-check';
+                    navUserIcon.style.color = '#4caf50';
+                    navUserBtn.title = displayName;
+                    navLogoutBtn.style.display = 'inline-flex';
+                });
+            } else {
+                navUserName.style.display = 'none';
+                navUserName.textContent = '';
+                navUserIcon.className = 'fas fa-user';
+                navUserIcon.style.color = '';
+                navUserBtn.title = 'تسجيل الدخول';
+                navLogoutBtn.style.display = 'none';
+            }
+        }
+
+        // مراقبة حالة تسجيل الدخول
+        auth.onAuthStateChanged(user => {
+            updateNavUserState(user);
+        });
+
+        // إنشاء حساب جديد
+        document.getElementById('signupSubmitBtn').addEventListener('click', async () => {
+            hideAuthError('signupError');
+            const fullName = document.getElementById('signupFullName').value.trim();
+            const username = document.getElementById('signupUsername').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
+            const phone = document.getElementById('signupPhone').value.trim();
+            const password = document.getElementById('signupPassword').value;
+            const passwordConfirm = document.getElementById('signupPasswordConfirm').value;
+
+            if (!fullName) { showAuthError('signupError', 'يرجى إدخال الاسم الكامل'); return; }
+            if (!username) { showAuthError('signupError', 'يرجى إدخال اسم المستخدم'); return; }
+            if (!email) { showAuthError('signupError', 'يرجى إدخال البريد الإلكتروني'); return; }
+            if (!phone) { showAuthError('signupError', 'يرجى إدخال رقم الهاتف'); return; }
+            if (!password) { showAuthError('signupError', 'يرجى إدخال كلمة المرور'); return; }
+            if (password !== passwordConfirm) { showAuthError('signupError', 'كلمتا المرور غير متطابقتين'); return; }
+            if (password.length < 6) { showAuthError('signupError', 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'); return; }
+
+            const btn = document.getElementById('signupSubmitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ إنشاء الحساب...';
+
+            try {
+                // التحقق من أن اسم المستخدم غير مستخدم
+                const usernameCheck = await db.collection('users').where('username', '==', username).get();
+                if (!usernameCheck.empty) {
+                    showAuthError('signupError', 'اسم المستخدم مستخدم بالفعل، اختر اسماً آخر');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-user-plus"></i> إنشاء الحساب';
+                    return;
+                }
+
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+
+                // حفظ بيانات المستخدم في Firestore
+                await db.collection('users').doc(user.uid).set({
+                    fullName: fullName,
+                    username: username,
+                    email: email,
+                    phone: phone,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    emailVerified: false
+                });
+
+                // إرسال رسالة تأكيد الإيميل
+                await user.sendEmailVerification();
+
+                // إغلاق صفحة إنشاء الحساب وفتح صفحة التأكيد
+                document.getElementById('signupPage').classList.remove('active');
+                document.getElementById('verifyEmailAddress').textContent = email;
+                document.getElementById('verifyEmailPage').classList.add('active');
+
+                showNotification('تم إنشاء الحساب! تحقق من بريدك الإلكتروني', 'success');
+
+                // مسح الحقول
+                document.getElementById('signupFullName').value = '';
+                document.getElementById('signupUsername').value = '';
+                document.getElementById('signupEmail').value = '';
+                document.getElementById('signupPhone').value = '';
+                document.getElementById('signupPassword').value = '';
+                document.getElementById('signupPasswordConfirm').value = '';
+
+            } catch (error) {
+                showAuthError('signupError', firebaseErrorMsg(error.code));
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-user-plus"></i> إنشاء الحساب';
+        });
+
+        // تسجيل الدخول
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            hideAuthError('loginError');
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email) { showAuthError('loginError', 'يرجى إدخال البريد الإلكتروني'); return; }
+            if (!password) { showAuthError('loginError', 'يرجى إدخال كلمة المرور'); return; }
+
+            const btn = document.getElementById('loginBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ تسجيل الدخول...';
+
+            try {
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+
+                if (!user.emailVerified) {
+                    // الإيميل غير مؤكد - أظهر صفحة التأكيد
+                    document.getElementById('loginPage').classList.remove('active');
+                    document.getElementById('verifyEmailAddress').textContent = email;
+                    document.getElementById('verifyEmailPage').classList.add('active');
+                    showNotification('يرجى تأكيد بريدك الإلكتروني أولاً', 'warning');
+                } else {
+                    // تسجيل دخول ناجح
+                    document.getElementById('loginPage').classList.remove('active');
+                    document.body.style.overflow = '';
+                    showNotification(`مرحباً بك مجدداً!`, 'success');
+
+                    // تحديث حالة التأكيد في Firestore
+                    await db.collection('users').doc(user.uid).update({ emailVerified: true });
+
+                    document.getElementById('loginEmail').value = '';
+                    document.getElementById('loginPassword').value = '';
+                }
+            } catch (error) {
+                showAuthError('loginError', firebaseErrorMsg(error.code));
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> دخول';
+        });
+
+        // إعادة إرسال رسالة التأكيد
+        document.getElementById('resendVerifyBtn').addEventListener('click', async () => {
+            hideAuthError('verifyError');
+            const user = auth.currentUser;
+            if (user) {
+                try {
+                    await user.sendEmailVerification();
+                    showNotification('تم إعادة إرسال رسالة التأكيد', 'success');
+                } catch (error) {
+                    if (error.code === 'auth/too-many-requests') {
+                        showAuthError('verifyError', 'انتظر قليلاً قبل إعادة الإرسال');
+                    } else {
+                        showAuthError('verifyError', firebaseErrorMsg(error.code));
+                    }
+                }
+            }
+        });
+
+        // التحقق من تأكيد الإيميل
+        document.getElementById('checkVerifyBtn').addEventListener('click', async () => {
+            hideAuthError('verifyError');
+            const user = auth.currentUser;
+            if (user) {
+                await user.reload();
+                if (user.emailVerified) {
+                    await db.collection('users').doc(user.uid).update({ emailVerified: true });
+                    document.getElementById('verifyEmailPage').classList.remove('active');
+                    document.body.style.overflow = '';
+                    showNotification('تم تأكيد الإيميل بنجاح! مرحباً بك', 'success');
+                    updateNavUserState(user);
+                } else {
+                    showAuthError('verifyError', 'لم يتم تأكيد الإيميل بعد. تحقق من بريدك الإلكتروني');
+                }
+            }
+        });
+
+        // إغلاق صفحة التأكيد
+        document.getElementById('verifyEmailClose').addEventListener('click', () => {
+            document.getElementById('verifyEmailPage').classList.remove('active');
+            document.body.style.overflow = '';
+        });
+
+        // تسجيل الخروج
+        document.getElementById('navLogoutBtn').addEventListener('click', async () => {
+            try {
+                await auth.signOut();
+                showNotification('تم تسجيل الخروج بنجاح', 'success');
+            } catch (error) {
+                showNotification('حدث خطأ أثناء تسجيل الخروج', 'warning');
+            }
+        });
+
+        // تعديل زر المستخدم في الشريط: إذا مسجل دخول يفتح الملف الشخصي بدلاً من تسجيل الدخول
+        document.getElementById('navUserBtn').addEventListener('click', () => {
+            const user = auth.currentUser;
+            if (user && user.emailVerified) {
+                showNotification(`أنت مسجل كـ: ${user.email}`, 'info');
+            }
+        });
+
     </script>
 </body>
 </html>
