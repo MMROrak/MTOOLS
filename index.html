@@ -4194,12 +4194,15 @@
             const msgs = {
                 'auth/email-already-in-use': 'هذا البريد الإلكتروني مستخدم بالفعل',
                 'auth/invalid-email': 'البريد الإلكتروني غير صالح',
-                'auth/weak-password': 'كلمة المرور ضعيفة - يجب أن تكون 6 أحرف على الأقل',
+                'auth/weak-password': 'كلمة المرور ضعيفة جداً - يجب أن تكون 6 أحرف على الأقل وتحتوي على أرقام وحروف',
                 'auth/user-not-found': 'لا يوجد حساب بهذا البريد الإلكتروني',
                 'auth/wrong-password': 'كلمة المرور غير صحيحة',
                 'auth/invalid-credential': 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
                 'auth/too-many-requests': 'محاولات كثيرة جداً. حاول لاحقاً',
-                'auth/network-request-failed': 'مشكلة في الاتصال بالإنترنت'
+                'auth/network-request-failed': 'مشكلة في الاتصال بالإنترنت',
+                'auth/operation-not-allowed': 'تسجيل الدخول بالإيميل غير مفعّل. تواصل مع الإدارة',
+                'auth/missing-password': 'يرجى إدخال كلمة المرور',
+                'auth/missing-email': 'يرجى إدخال البريد الإلكتروني'
             };
             return msgs[code] || 'خطأ: ' + (code || 'غير معروف') + ' - حاول مرة أخرى';
         }
@@ -4259,8 +4262,8 @@
             if (!email) { showAuthError('signupError', 'يرجى إدخال البريد الإلكتروني'); return; }
             if (!phone) { showAuthError('signupError', 'يرجى إدخال رقم الهاتف'); return; }
             if (!password) { showAuthError('signupError', 'يرجى إدخال كلمة المرور'); return; }
+            if (password.length < 6) { showAuthError('signupError', '⚠️ كلمة المرور قصيرة جداً - يجب أن تكون 6 أحرف على الأقل'); return; }
             if (password !== passwordConfirm) { showAuthError('signupError', 'كلمتا المرور غير متطابقتين'); return; }
-            if (password.length < 6) { showAuthError('signupError', 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'); return; }
 
             const btn = document.getElementById('signupSubmitBtn');
             btn.disabled = true;
