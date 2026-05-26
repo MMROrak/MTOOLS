@@ -4389,8 +4389,8 @@
             measurementId: "G-XZLX64JGBL"
         };
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        var auth = firebase.auth();
+        var db = firebase.firestore();
         auth.languageCode = 'ar';
 
         function firebaseErrorMsg(code) {
