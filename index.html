@@ -4201,7 +4201,7 @@
                 'auth/too-many-requests': 'محاولات كثيرة جداً. حاول لاحقاً',
                 'auth/network-request-failed': 'مشكلة في الاتصال بالإنترنت'
             };
-            return msgs[code] || 'حدث خطأ غير متوقع. حاول مرة أخرى';
+            return msgs[code] || 'خطأ: ' + (code || 'غير معروف') + ' - حاول مرة أخرى';
         }
 
         function showAuthError(elementId, msg) {
