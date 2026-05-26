@@ -3493,7 +3493,7 @@
         }
         
         // ========== DISPLAY FUNCTIONS ==========
-        function showModal(product) {
+        function showModal(product, hideAddBtn) {
             if (!termsAccepted) { showTermsModal(); showNotification('يجب قبول الشروط أولاً', 'warning'); return; }
             currentModalProduct = product;
             currentModalService = null;
@@ -3502,14 +3502,19 @@
             document.getElementById('modalDesc').textContent = product.desc;
             document.getElementById('modalPrice').innerHTML = `${product.price} ₪ <small>/ ترخيص دائم</small>`;
             const addBtn = document.getElementById('modalAddToCart');
-            if (isProductInCart(product.id)) {
-                addBtn.innerHTML = '<i class="fas fa-check"></i> مضاف للسلة';
-                addBtn.classList.add('button--added');
-                addBtn.disabled = true;
+            if (hideAddBtn) {
+                addBtn.style.display = 'none';
             } else {
-                addBtn.innerHTML = '<i class="fas fa-cart-plus"></i> إضافة للسلة';
-                addBtn.classList.remove('button--added');
-                addBtn.disabled = false;
+                addBtn.style.display = '';
+                if (isProductInCart(product.id)) {
+                    addBtn.innerHTML = '<i class="fas fa-check"></i> مضاف للسلة';
+                    addBtn.classList.add('button--added');
+                    addBtn.disabled = true;
+                } else {
+                    addBtn.innerHTML = '<i class="fas fa-cart-plus"></i> إضافة للسلة';
+                    addBtn.classList.remove('button--added');
+                    addBtn.disabled = false;
+                }
             }
             document.getElementById('productModal').classList.add('active');
         }
@@ -3540,7 +3545,7 @@
             const bundleModal = document.getElementById('bundleModal');
             if (bundleModal.classList.contains('active')) {
                 bundleModal.classList.remove('active');
-                showModal(product);
+                showModal(product, true);
                 const modal = document.getElementById('productModal');
                 const checkInterval = setInterval(() => {
                     if (!modal.classList.contains('active')) {
@@ -3548,7 +3553,7 @@
                         clearInterval(checkInterval);
                     }
                 }, 100);
-            } else { showModal(product); }
+            } else { showModal(product, true); }
         }
         
         // ========== RENDER BUNDLES ==========
@@ -3585,7 +3590,7 @@
                     const productName = btn.dataset.productName;
                     let foundProduct = null;
                     for (const os in products) { foundProduct = products[os].find(p => `${p.name} (${p.os})` === productName); if (foundProduct) break; }
-                    if (foundProduct) showModal(foundProduct);
+                    if (foundProduct) showModal(foundProduct, true);
                     else showNotification('لا توجد تفاصيل إضافية', 'warning');
                 });
             });
@@ -3688,7 +3693,7 @@
                 if (!inCart) {
                     div.addEventListener('click', (e) => { if (!e.target.classList.contains('view-details-btn')) toggleProductSelection(p, div); });
                 }
-                div.querySelector('.view-details-btn').addEventListener('click', (e) => { e.stopPropagation(); showModal(p); });
+                div.querySelector('.view-details-btn').addEventListener('click', (e) => { e.stopPropagation(); showModal(p, true); });
                 container.appendChild(div);
             });
         }
@@ -3720,7 +3725,7 @@
                 if (!disabled) {
                     div.addEventListener('click', () => { document.querySelectorAll('#step2ProductsGrid .product-select-card:not(.in-cart-disabled)').forEach(c => c.classList.remove('selected')); div.classList.add('selected'); selectedFreeProduct = fp; });
                 }
-                div.querySelector('.view-details-btn').addEventListener('click', (e) => { e.stopPropagation(); showModal(fp); });
+                div.querySelector('.view-details-btn').addEventListener('click', (e) => { e.stopPropagation(); showModal(fp, true); });
                 container.appendChild(div);
             });
         }
