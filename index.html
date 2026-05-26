@@ -4267,27 +4267,22 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ إنشاء الحساب...';
 
             try {
-                // التحقق من أن اسم المستخدم غير مستخدم
-                const usernameCheck = await db.collection('users').where('username', '==', username).get();
-                if (!usernameCheck.empty) {
-                    showAuthError('signupError', 'اسم المستخدم مستخدم بالفعل، اختر اسماً آخر');
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-user-plus"></i> إنشاء الحساب';
-                    return;
-                }
-
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                 const user = userCredential.user;
 
                 // حفظ بيانات المستخدم في Firestore
-                await db.collection('users').doc(user.uid).set({
-                    fullName: fullName,
-                    username: username,
-                    email: email,
-                    phone: phone,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    emailVerified: false
-                });
+                try {
+                    await db.collection('users').doc(user.uid).set({
+                        fullName: fullName,
+                        username: username,
+                        email: email,
+                        phone: phone,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        emailVerified: false
+                    });
+                } catch (firestoreErr) {
+                    console.warn('Firestore save warning:', firestoreErr);
+                }
 
                 // إرسال رسالة تأكيد الإيميل
                 await user.sendEmailVerification();
@@ -4308,6 +4303,7 @@
                 document.getElementById('signupPasswordConfirm').value = '';
 
             } catch (error) {
+                console.error('Signup error:', error.code, error.message);
                 showAuthError('signupError', firebaseErrorMsg(error.code));
             }
             btn.disabled = false;
@@ -4350,6 +4346,7 @@
                     document.getElementById('loginPassword').value = '';
                 }
             } catch (error) {
+                console.error('Login error:', error.code, error.message);
                 showAuthError('loginError', firebaseErrorMsg(error.code));
             }
             btn.disabled = false;
