@@ -200,7 +200,7 @@
             background: transparent;
             border: 1px solid var(--border-color);
             color: var(--gray-300);
-            width: 40px;
+            min-width: 40px;
             height: 40px;
             border-radius: 10px;
             display: flex;
@@ -209,6 +209,22 @@
             font-size: 18px;
             cursor: pointer;
             transition: all 0.3s ease;
+            padding: 0 8px;
+            gap: 6px;
+        }
+        .navbar-user-btn.logged-in {
+            border-color: rgba(76,175,80,0.4);
+            background: rgba(76,175,80,0.05);
+            padding: 0 12px;
+        }
+        .navbar-user-btn.logged-in .nav-user-display {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #4caf50;
+            font-weight: 600;
+            white-space: nowrap;
         }
         .navbar-cart-btn:hover,
         .navbar-user-btn:hover {
@@ -216,6 +232,104 @@
             border-color: var(--red-primary);
             background: rgba(230,57,70,0.1);
             box-shadow: 0 0 15px rgba(230,57,70,0.2);
+        }
+        .navbar-user-btn.logged-in:hover {
+            border-color: rgba(76,175,80,0.6);
+            background: rgba(76,175,80,0.1);
+            box-shadow: 0 0 15px rgba(76,175,80,0.2);
+            color: #4caf50;
+        }
+        /* ==================== صفحة البروفايل ==================== */
+        .profile-page {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 10000;
+            display: none; justify-content: center; align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        .profile-page.active { display: flex; }
+        .profile-container {
+            background: var(--bg-card);
+            border: 1px solid var(--red-primary);
+            border-radius: 16px;
+            width: 90%; max-width: 520px; max-height: 90vh;
+            overflow-y: auto; padding: 30px;
+            box-shadow: 0 0 40px rgba(230,57,70,0.3), 0 0 80px rgba(230,57,70,0.1);
+            animation: modalSlideIn 0.4s ease;
+            position: relative;
+        }
+        .profile-header {
+            text-align: center; margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(230,57,70,0.2);
+        }
+        .profile-avatar {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--red-primary), var(--red-dark));
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 15px; font-size: 36px; color: #fff;
+            box-shadow: 0 0 20px rgba(230,57,70,0.4);
+            border: 2px solid rgba(230,57,70,0.5);
+        }
+        .profile-header h2 {
+            color: var(--red-primary); font-size: 1.4rem;
+            margin-bottom: 5px; font-family: 'Barlow', sans-serif;
+        }
+        .profile-header .profile-username {
+            color: var(--gray-400); font-size: 0.9rem;
+        }
+        .profile-info-grid {
+            display: grid; gap: 12px; margin-bottom: 20px;
+        }
+        .profile-info-item {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px; padding: 14px 16px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .profile-info-item i {
+            color: var(--red-primary); font-size: 18px; width: 22px; text-align: center;
+        }
+        .profile-info-item .info-label {
+            color: var(--gray-400); font-size: 11px; display: block;
+        }
+        .profile-info-item .info-value {
+            color: var(--gray-200); font-size: 14px; font-weight: 600;
+        }
+        .profile-section-title {
+            color: var(--red-primary); font-size: 1rem; margin: 20px 0 12px;
+            display: flex; align-items: center; gap: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(230,57,70,0.15);
+        }
+        .profile-purchases-empty {
+            text-align: center; color: var(--gray-400);
+            padding: 20px; font-size: 14px;
+        }
+        .profile-purchase-item {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px; padding: 10px 14px;
+            margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .profile-purchase-item .purchase-name {
+            color: var(--gray-200); font-size: 13px; font-weight: 600;
+        }
+        .profile-purchase-item .purchase-price {
+            color: var(--red-primary); font-size: 13px; font-weight: 700;
+        }
+        .profile-purchase-item .purchase-date {
+            color: var(--gray-500); font-size: 11px;
+        }
+        .profile-logout-btn {
+            width: 100%; margin-top: 20px; padding: 12px;
+            background: transparent; border: 1px solid var(--red-primary);
+            color: var(--red-primary); border-radius: 10px;
+            font-size: 14px; font-weight: 700; cursor: pointer;
+            transition: all 0.3s ease; font-family: 'Cairo', sans-serif;
+        }
+        .profile-logout-btn:hover {
+            background: var(--red-primary); color: #fff;
         }
         .navbar-cart-count {
             position: absolute;
@@ -266,6 +380,12 @@
             }
             .mobile-menu-btn {
                 display: block;
+            }
+            .navbar-user-btn.logged-in .nav-user-display span {
+                display: none;
+            }
+            .profile-container {
+                width: 95%; padding: 20px; max-height: 85vh;
             }
         }
 
@@ -2716,7 +2836,9 @@
             <div class="navbar-actions">
                 <button class="navbar-user-btn" id="navUserBtn" title="تسجيل الدخول">
                     <i class="fas fa-user" id="navUserIcon"></i>
-                    <span id="navUserName" style="display:none;font-size:12px;margin-right:5px;"></span>
+                    <div class="nav-user-display" style="display:none;" id="navUserDisplay">
+                        <span id="navUserName"></span>
+                    </div>
                 </button>
                 <button class="navbar-user-btn" id="navLogoutBtn" title="تسجيل الخروج" style="display:none;">
                     <i class="fas fa-sign-out-alt"></i>
@@ -2796,6 +2918,41 @@
             <button class="button button--cta" id="resendVerifyBtn" style="width:100%;margin-top:15px;"><i class="fas fa-paper-plane"></i> إعادة إرسال رسالة التأكيد</button>
             <button class="button button--outline" id="checkVerifyBtn" style="width:100%;margin-top:10px;"><i class="fas fa-check-circle"></i> لقد أكدت الإيميل - تحقق الآن</button>
             <div id="verifyError" style="color:#e63946;font-size:13px;margin-top:8px;display:none;"></div>
+        </div>
+    </div>
+
+    <!-- ==================== صفحة البروفايل ==================== -->
+    <div class="profile-page" id="profilePage">
+        <div class="profile-container">
+            <span class="login-close" id="profileClose">&times;</span>
+            <div class="profile-header">
+                <div class="profile-avatar"><i class="fas fa-user-secret"></i></div>
+                <h2 id="profileFullName">-</h2>
+                <div class="profile-username">@<span id="profileUsername">-</span></div>
+            </div>
+            <div class="profile-info-grid">
+                <div class="profile-info-item">
+                    <i class="fas fa-envelope"></i>
+                    <div><span class="info-label">البريد الإلكتروني</span><span class="info-value" id="profileEmail">-</span></div>
+                </div>
+                <div class="profile-info-item">
+                    <i class="fas fa-phone"></i>
+                    <div><span class="info-label">رقم الهاتف</span><span class="info-value" id="profilePhone">-</span></div>
+                </div>
+                <div class="profile-info-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <div><span class="info-label">تاريخ إنشاء الحساب</span><span class="info-value" id="profileCreatedAt">-</span></div>
+                </div>
+                <div class="profile-info-item">
+                    <i class="fas fa-shield-alt"></i>
+                    <div><span class="info-label">حالة الحساب</span><span class="info-value" id="profileStatus" style="color:#4caf50;">مفعّل</span></div>
+                </div>
+            </div>
+            <div class="profile-section-title"><i class="fas fa-shopping-bag"></i> سجل المشتريات</div>
+            <div id="profilePurchasesList">
+                <div class="profile-purchases-empty"><i class="fas fa-box-open" style="font-size:30px;margin-bottom:10px;display:block;color:var(--gray-500);"></i>لا توجد مشتريات سابقة</div>
+            </div>
+            <button class="profile-logout-btn" id="profileLogoutBtn"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</button>
         </div>
     </div>
 
@@ -3892,6 +4049,8 @@
                 cart.forEach(item => { list += `• ${item.displayName} - ${item.price} ₪\n`; total += item.price; });
                 const ip = await getIP(); const device = getDeviceInfo();
                 await sendToTelegram(`🛒 <b>طلب شراء جديد</b>\n📦 المنتجات:\n${list}\n💰 الإجمالي: ${total} ₪\n📞 التواصل: ${method}\n🌍 IP: ${ip}\n💻 ${device.device}`);
+                const currentUser = typeof auth !== 'undefined' ? auth.currentUser : null;
+                if (currentUser) savePurchaseHistory(currentUser.uid, cart);
                 showSuccessMessage();
                 cart = []; saveCart(); updateCartUI(); updateAllAddButtons();
                 closeCart();
@@ -4004,10 +4163,13 @@
                 openCart();
             });
             
-            // Navbar user button opens login (if not logged in)
+            // Navbar user button opens login or profile
             document.getElementById('navUserBtn').addEventListener('click', () => {
                 const user = typeof auth !== 'undefined' ? auth.currentUser : null;
-                if (user && user.emailVerified) return;
+                if (user && user.emailVerified) {
+                    openProfilePage(user);
+                    return;
+                }
                 document.getElementById('loginPage').classList.add('active');
                 document.body.style.overflow = 'hidden';
             });
@@ -4216,31 +4378,94 @@
             document.getElementById(elementId).style.display = 'none';
         }
 
+        let currentUserData = null;
         function updateNavUserState(user) {
             const navUserBtn = document.getElementById('navUserBtn');
             const navLogoutBtn = document.getElementById('navLogoutBtn');
             const navUserName = document.getElementById('navUserName');
+            const navUserDisplay = document.getElementById('navUserDisplay');
             const navUserIcon = document.getElementById('navUserIcon');
             if (user && user.emailVerified) {
                 db.collection('users').doc(user.uid).get().then(doc => {
                     const data = doc.exists ? doc.data() : {};
+                    currentUserData = data;
                     const displayName = data.fullName || data.username || user.email.split('@')[0];
                     navUserName.textContent = displayName;
-                    navUserName.style.display = 'inline';
+                    navUserDisplay.style.display = 'flex';
                     navUserIcon.className = 'fas fa-user-check';
                     navUserIcon.style.color = '#4caf50';
-                    navUserBtn.title = displayName;
+                    navUserBtn.title = 'الملف الشخصي - ' + displayName;
+                    navUserBtn.classList.add('logged-in');
                     navLogoutBtn.style.display = 'inline-flex';
                 });
             } else {
-                navUserName.style.display = 'none';
+                currentUserData = null;
+                navUserDisplay.style.display = 'none';
                 navUserName.textContent = '';
                 navUserIcon.className = 'fas fa-user';
                 navUserIcon.style.color = '';
                 navUserBtn.title = 'تسجيل الدخول';
+                navUserBtn.classList.remove('logged-in');
                 navLogoutBtn.style.display = 'none';
             }
         }
+
+        // ==================== فتح صفحة البروفايل ====================
+        function openProfilePage(user) {
+            const data = currentUserData || {};
+            document.getElementById('profileFullName').textContent = data.fullName || user.email.split('@')[0];
+            document.getElementById('profileUsername').textContent = data.username || '-';
+            document.getElementById('profileEmail').textContent = data.email || user.email;
+            document.getElementById('profilePhone').textContent = data.phone || '-';
+            if (data.createdAt && data.createdAt.toDate) {
+                const d = data.createdAt.toDate();
+                document.getElementById('profileCreatedAt').textContent = d.toLocaleDateString('ar-EG', {year:'numeric',month:'long',day:'numeric'}) + ' - ' + d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+            } else {
+                document.getElementById('profileCreatedAt').textContent = '-';
+            }
+            document.getElementById('profileStatus').textContent = user.emailVerified ? 'مفعّل ✓' : 'غير مفعّل';
+            document.getElementById('profileStatus').style.color = user.emailVerified ? '#4caf50' : '#e63946';
+            loadPurchaseHistory(user.uid);
+            document.getElementById('profilePage').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        function loadPurchaseHistory(uid) {
+            const list = document.getElementById('profilePurchasesList');
+            const purchases = JSON.parse(localStorage.getItem('purchases_' + uid) || '[]');
+            if (purchases.length === 0) {
+                list.innerHTML = '<div class="profile-purchases-empty"><i class="fas fa-box-open" style="font-size:30px;margin-bottom:10px;display:block;color:var(--gray-500);"></i>لا توجد مشتريات سابقة</div>';
+                return;
+            }
+            let html = '';
+            purchases.forEach(p => {
+                const d = new Date(p.date);
+                const dateStr = d.toLocaleDateString('ar-EG', {year:'numeric',month:'short',day:'numeric'});
+                html += '<div class="profile-purchase-item"><div><span class="purchase-name">' + p.name + '</span><br><span class="purchase-date">' + dateStr + '</span></div><div class="purchase-price">' + (p.price > 0 ? p.price + ' ₪' : 'مجاني 🎁') + '</div></div>';
+            });
+            list.innerHTML = html;
+        }
+        function savePurchaseHistory(uid, cartItems) {
+            const purchases = JSON.parse(localStorage.getItem('purchases_' + uid) || '[]');
+            cartItems.forEach(item => {
+                purchases.push({ name: item.displayName, price: item.price, date: new Date().toISOString() });
+            });
+            localStorage.setItem('purchases_' + uid, JSON.stringify(purchases));
+        }
+        document.getElementById('profileClose').addEventListener('click', () => {
+            document.getElementById('profilePage').classList.remove('active');
+            document.body.style.overflow = '';
+        });
+        document.getElementById('profilePage').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('profilePage')) {
+                document.getElementById('profilePage').classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+        document.getElementById('profileLogoutBtn').addEventListener('click', () => {
+            document.getElementById('profilePage').classList.remove('active');
+            document.body.style.overflow = '';
+            auth.signOut().then(() => showNotification('تم تسجيل الخروج', 'success'));
+        });
 
         // مراقبة حالة تسجيل الدخول
         auth.onAuthStateChanged(user => {
