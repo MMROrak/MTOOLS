@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" id="viewportMeta" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-    <title>OH.STORE - أدوات اختبار الاختراق</title>
+    <title>RootZone - أدوات اختبار الاختراق</title>
     
     <!-- ==================== الخطوط ==================== -->
     <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1680,6 +1680,10 @@
         .cart-sidebar.open {
             left: 0;
         }
+        .cart-sidebar {
+            overscroll-behavior: contain;
+            touch-action: auto;
+        }
         .cart-header {
             padding: 20px 25px;
             border-bottom: 2px solid var(--red-primary);
@@ -1725,7 +1729,22 @@
         .cart-items {
             flex: 1;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
             padding: 20px 25px;
+        }
+        .cart-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 1499;
+        }
+        .cart-overlay.open {
+            display: block;
         }
         .cart-item {
             display: flex;
@@ -2674,7 +2693,7 @@
     <!-- ========== TOP NAVBAR ========== -->
     <nav class="top-navbar" id="topNavbar">
         <div class="navbar-container">
-            <a href="#" class="navbar-brand">OH<span>.STORE</span></a>
+            <a href="#" class="navbar-brand">Root<span>Zone</span></a>
             
             <button class="mobile-menu-btn" id="mobileMenuBtn">
                 <i class="fas fa-bars"></i>
@@ -2782,6 +2801,7 @@
     </div>
 
     <!-- Cart sidebar -->
+    <div class="cart-overlay" id="cartOverlay"></div>
     <div class="cart-sidebar" id="cartSidebar">
         <div class="cart-header">
             <h3><i class="fas fa-shopping-cart"></i> سلة المشتريات</h3>
@@ -2844,11 +2864,11 @@
         <div class="terms-modal-content">
             <h3><i class="fas fa-file-contract"></i> الشروط والأحكام</h3>
             <h4>1. الاستخدام القانوني</h4>
-            <p>جميع الأدوات والبرامج المعروضة في متجر OH.STORE مخصصة حصريًا لأغراض <strong>اختبار الاختراق (Penetration Testing)</strong> والتدقيق الأمني في <strong>بيئات مرخصة ومصرح بها كتابيًا</strong>.</p>
+            <p>جميع الأدوات والبرامج المعروضة في متجر RootZone مخصصة حصريًا لأغراض <strong>اختبار الاختراق (Penetration Testing)</strong> والتدقيق الأمني في <strong>بيئات مرخصة ومصرح بها كتابيًا</strong>.</p>
             <h4>2. مسؤولية المستخدم</h4>
-            <p>بموجب شراء أو استخدام أي من أدوات OH.STORE، فإنك تقر وتتعهد بأنك تمتلك الإذن القانوني الكامل.</p>
+            <p>بموجب شراء أو استخدام أي من أدوات RootZone، فإنك تقر وتتعهد بأنك تمتلك الإذن القانوني الكامل.</p>
             <h4>3. إخلاء المسؤولية</h4>
-            <p>OH.STORE ليست مسؤولة عن أي استخدام غير قانوني للأدوات.</p>
+            <p>RootZone ليست مسؤولة عن أي استخدام غير قانوني للأدوات.</p>
             <h4>4. التزاماتنا</h4>
             <p>نلتزم بتقديم أدوات عالية الجودة لأغراض التدقيق الأمني فقط.</p>
             <h4>5. الموافقة</h4>
@@ -2903,7 +2923,7 @@
     <div class="success-message" id="successMessage">
         <i class="fas fa-check-circle"></i>
         <h3>تم استلام طلبك بنجاح!</h3>
-        <p>شكراً لثقتك في OH.STORE.<br>سيتم التواصل معك خلال 24 ساعة لتأكيد الطلب وتفاصيل الدفع.</p>
+        <p>شكراً لثقتك في RootZone.<br>سيتم التواصل معك خلال 24 ساعة لتأكيد الطلب وتفاصيل الدفع.</p>
         <button class="close-success" id="closeSuccess">حسناً</button>
     </div>
 
@@ -2952,7 +2972,7 @@
             <div class="hero-badge">
                 <i class="fas fa-shield-alt"></i> غير مكتشف | آمن 100%
             </div>
-            <h1>OH.STORE</h1>
+            <h1>RootZone</h1>
             <p>أقوى متجر عربي لأدوات اختبار الاختراق | أدوات احترافية</p>
             <a href="#products" class="button button--cta shop-now"><i class="fas fa-store"></i> تسوق الآن</a>
         </div>
@@ -3066,7 +3086,7 @@
         <div class="container">
             <div class="pre-footer--container">
                 <div class="pre-footer--column">
-                    <h3>OH.STORE</h3>
+                    <h3>RootZone</h3>
                     <p>أكبر متجر عربي متخصص في أدوات اختبار الاختراق. نقدم أدوات احترافية بأعلى معايير الجودة والأمان.</p>
                 </div>
                 <div class="pre-footer--column">
@@ -3107,7 +3127,7 @@
     <footer class="footer">
         <div class="container">
             <div class="footer-copyright">
-                <i class="fas fa-copyright"></i> 2026 OH.STORE - جميع الحقوق محفوظة | أدوات اختبار اختراق للأغراض التعليمية فقط
+                <i class="fas fa-copyright"></i> 2026 RootZone - جميع الحقوق محفوظة | أدوات اختبار اختراق للأغراض التعليمية فقط
             </div>
         </div>
     </footer>
@@ -3730,12 +3750,25 @@
             });
         }
         
+        function openCart() {
+            document.getElementById('cartSidebar').classList.add('open');
+            document.getElementById('cartOverlay').classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeCart() {
+            document.getElementById('cartSidebar').classList.remove('open');
+            document.getElementById('cartOverlay').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+        
         function setupCartSidebar() {
             const toggle = document.getElementById('cartToggle'); const sidebar = document.getElementById('cartSidebar'); const close = document.getElementById('cartClose');
-            toggle.addEventListener('click', () => { if (!termsAccepted) { showTermsModal(); showNotification('يجب قبول الشروط أولاً', 'warning'); return; } sidebar.classList.add('open'); });
-            close.addEventListener('click', () => sidebar.classList.remove('open'));
+            const overlay = document.getElementById('cartOverlay');
+            toggle.addEventListener('click', () => { if (!termsAccepted) { showTermsModal(); showNotification('يجب قبول الشروط أولاً', 'warning'); return; } openCart(); });
+            close.addEventListener('click', () => closeCart());
+            overlay.addEventListener('click', () => closeCart());
             const navCartBtn = document.getElementById('navCartBtn');
-            document.addEventListener('click', (e) => { if (!sidebar.contains(e.target) && !toggle.contains(e.target) && !navCartBtn.contains(e.target) && sidebar.classList.contains('open')) sidebar.classList.remove('open'); });
+            document.addEventListener('click', (e) => { if (!sidebar.contains(e.target) && !toggle.contains(e.target) && !navCartBtn.contains(e.target) && !overlay.contains(e.target) && sidebar.classList.contains('open')) closeCart(); });
             document.getElementById('clearCartBtn').addEventListener('click', () => clearCart());
         }
         
@@ -3814,7 +3847,7 @@
                 await sendToTelegram(`🛒 <b>طلب شراء جديد</b>\n📦 المنتجات:\n${list}\n💰 الإجمالي: ${total} ₪\n📞 التواصل: ${method}\n🌍 IP: ${ip}\n💻 ${device.device}`);
                 showSuccessMessage();
                 cart = []; saveCart(); updateCartUI(); updateAllAddButtons();
-                document.getElementById('cartSidebar').classList.remove('open');
+                closeCart();
             });
             contactModal.addEventListener('click', (e) => { if (e.target === contactModal) contactModal.classList.remove('active'); });
         }
@@ -3921,7 +3954,7 @@
             document.getElementById('navCartBtn').addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (!termsAccepted) { showTermsModal(); showNotification('يجب قبول الشروط أولاً', 'warning'); return; }
-                document.getElementById('cartSidebar').classList.add('open');
+                openCart();
             });
             
             // Navbar user button opens login
@@ -3982,7 +4015,7 @@
                 e.stopPropagation();
                 hideCartAddedModal();
                 setTimeout(() => {
-                    document.getElementById('cartSidebar').classList.add('open');
+                    openCart();
                 }, 100);
             });
             document.getElementById('cartAddedModal').addEventListener('click', (e) => {
