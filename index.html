@@ -2214,6 +2214,27 @@
             background: var(--red-primary);
             color: #fff;
         }
+        .product-select-card.in-cart-disabled {
+            border-color: #8b0000;
+            background: rgba(139,0,0,0.15);
+            cursor: not-allowed;
+            opacity: 0.7;
+            position: relative;
+        }
+        .product-select-card.in-cart-disabled:hover {
+            border-color: #8b0000;
+            background: rgba(139,0,0,0.15);
+        }
+        .in-cart-badge {
+            background: linear-gradient(135deg, #8b0000, #a00000);
+            color: #fff;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-top: 6px;
+            display: inline-block;
+        }
 
         /* Pre-footer & Footer */
         .pre-footer {
@@ -3639,9 +3660,12 @@
             const container = document.getElementById('step1ProductsGrid'); container.innerHTML = '';
             const allProducts = [...products.android, ...products.ios, ...products.windows];
             allProducts.forEach(p => {
-                const div = document.createElement('div'); div.className = 'product-select-card';
-                div.innerHTML = `<div class="product-name">${p.name}</div><div class="product-os">${p.os}</div><div class="product-price">${p.price} ₪</div><button class="view-details-btn">تفاصيل</button>`;
-                div.addEventListener('click', (e) => { if (!e.target.classList.contains('view-details-btn')) toggleProductSelection(p, div); });
+                const inCart = isProductInCart(p.id);
+                const div = document.createElement('div'); div.className = 'product-select-card' + (inCart ? ' in-cart-disabled' : '');
+                div.innerHTML = `<div class="product-name">${p.name}</div><div class="product-os">${p.os}</div><div class="product-price">${p.price} ₪</div>${inCart ? '<div class="in-cart-badge">مضاف بالسلة</div>' : ''}<button class="view-details-btn">تفاصيل</button>`;
+                if (!inCart) {
+                    div.addEventListener('click', (e) => { if (!e.target.classList.contains('view-details-btn')) toggleProductSelection(p, div); });
+                }
                 div.querySelector('.view-details-btn').addEventListener('click', (e) => { e.stopPropagation(); showModal(p); });
                 container.appendChild(div);
             });
@@ -3662,9 +3686,12 @@
             const selectedOs = selectedStep1Products[0]?.os;
             const availableFree = freeProductsList.filter(fp => fp.os !== selectedOs);
             availableFree.forEach(fp => {
-                const div = document.createElement('div'); div.className = 'product-select-card';
-                div.innerHTML = `<div class="product-name">${fp.name}</div><div class="product-os">${fp.os}</div><div class="product-price">${fp.price} ₪</div><button class="view-details-btn">تفاصيل</button>`;
-                div.addEventListener('click', () => { document.querySelectorAll('#step2ProductsGrid .product-select-card').forEach(c => c.classList.remove('selected')); div.classList.add('selected'); selectedFreeProduct = fp; });
+                const inCart = isProductInCart(fp.id);
+                const div = document.createElement('div'); div.className = 'product-select-card' + (inCart ? ' in-cart-disabled' : '');
+                div.innerHTML = `<div class="product-name">${fp.name}</div><div class="product-os">${fp.os}</div><div class="product-price">${fp.price} ₪</div>${inCart ? '<div class="in-cart-badge">مضاف بالسلة</div>' : ''}<button class="view-details-btn">تفاصيل</button>`;
+                if (!inCart) {
+                    div.addEventListener('click', () => { document.querySelectorAll('#step2ProductsGrid .product-select-card:not(.in-cart-disabled)').forEach(c => c.classList.remove('selected')); div.classList.add('selected'); selectedFreeProduct = fp; });
+                }
                 div.querySelector('.view-details-btn').addEventListener('click', (e) => { e.stopPropagation(); showModal(fp); });
                 container.appendChild(div);
             });
@@ -3785,7 +3812,7 @@
                 const ip = await getIP(); const device = getDeviceInfo();
                 await sendToTelegram(`🛒 <b>طلب شراء جديد</b>\n📦 المنتجات:\n${list}\n💰 الإجمالي: ${total} ₪\n📞 التواصل: ${method}\n🌍 IP: ${ip}\n💻 ${device.device}`);
                 showSuccessMessage();
-                cart = []; saveCart(); updateCartUI();
+                cart = []; saveCart(); updateCartUI(); updateAllAddButtons();
                 document.getElementById('cartSidebar').classList.remove('open');
             });
             contactModal.addEventListener('click', (e) => { if (e.target === contactModal) contactModal.classList.remove('active'); });
