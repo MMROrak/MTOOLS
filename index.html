@@ -3167,13 +3167,10 @@
             { id: 4, name: "Spy Master Kit", image: "SpyMasterKit.png", productIds: [3,4,7], productsList: ["GeoSpy Pro (Windows)", "GeoSpy Pro (Android)", "GeoSpy Pro (iOS)"], originalPrice: 600, price: 500, save: 100 }
         ];
 
-        const freeProductsList = [
-            { id: 3, name: "GeoSpy Pro", os: "Android", price: 200, desc: "أداة تجسس احترافية متعددة المنصات." },
-            { id: 4, name: "GeoSpy Pro", os: "iOS", price: 200, desc: "أداة تجسس احترافية متعددة المنصات." },
-            { id: 7, name: "GeoSpy Pro", os: "Windows", price: 200, desc: "أداة تجسس احترافية متعددة المنصات." },
-            { id: 2, name: "PhantomRAT", os: "Android", price: 250, desc: "أداة تحكم عن بعد متقدمة." },
-            { id: 6, name: "PhantomRAT", os: "Windows", price: 250, desc: "أداة تحكم عن بعد متقدمة." }
-        ];
+        function getFreeProductsList(excludeOs) {
+            const allProducts = [...products.android, ...products.ios, ...products.windows];
+            return allProducts.filter(p => p.price <= 500 && p.os !== excludeOs);
+        }
 
         // ========== GLOBAL VARIABLES ==========
         let cart = [];
@@ -3709,12 +3706,18 @@
         function renderStep2Products() {
             const container = document.getElementById('step2ProductsGrid'); container.innerHTML = '';
             const selectedOs = selectedStep1Products[0]?.os;
-            const availableFree = freeProductsList.filter(fp => fp.os !== selectedOs);
+            const availableFree = getFreeProductsList(selectedOs);
+            const selectedIds = selectedStep1Products.map(p => p.id);
             availableFree.forEach(fp => {
                 const inCart = isProductInCart(fp.id);
-                const div = document.createElement('div'); div.className = 'product-select-card' + (inCart ? ' in-cart-disabled' : '');
-                div.innerHTML = `<div class="product-name">${fp.name}</div><div class="product-os">${fp.os}</div><div class="product-price">${fp.price} ₪</div>${inCart ? '<div class="in-cart-badge">مضاف بالسلة</div>' : ''}<button class="view-details-btn">تفاصيل</button>`;
-                if (!inCart) {
+                const isSelected = selectedIds.includes(fp.id);
+                const disabled = inCart || isSelected;
+                const div = document.createElement('div'); div.className = 'product-select-card' + (disabled ? ' in-cart-disabled' : '');
+                let badge = '';
+                if (inCart) badge = '<div class="in-cart-badge">مضاف بالسلة</div>';
+                else if (isSelected) badge = '<div class="in-cart-badge">تم اختياره</div>';
+                div.innerHTML = `<div class="product-name">${fp.name}</div><div class="product-os">${fp.os}</div><div class="product-price" style="color:#4caf50;font-weight:700;">مجاني 🎁</div>${badge}<button class="view-details-btn">تفاصيل</button>`;
+                if (!disabled) {
                     div.addEventListener('click', () => { document.querySelectorAll('#step2ProductsGrid .product-select-card:not(.in-cart-disabled)').forEach(c => c.classList.remove('selected')); div.classList.add('selected'); selectedFreeProduct = fp; });
                 }
                 div.querySelector('.view-details-btn').addEventListener('click', (e) => { e.stopPropagation(); showModal(fp); });
@@ -3725,9 +3728,19 @@
         function addSpecialBundleToCart() {
             if (selectedStep1Products.length !== 2) { showNotification('الرجاء اختيار منتجين!', 'warning'); return; }
             if (!selectedFreeProduct) { showNotification('الرجاء اختيار المنتج المجاني!', 'warning'); return; }
+            // التحقق الأمني: المنتجان يجب أن يكونا من نفس النظام
+            if (selectedStep1Products[0].os !== selectedStep1Products[1].os) { showNotification('يجب أن يكون المنتجان من نفس النظام!', 'warning'); return; }
+            // التحقق الأمني: المنتج المجاني يجب أن يكون من نظام مختلف وسعره 500 أو أقل
+            if (selectedFreeProduct.os === selectedStep1Products[0].os) { showNotification('المنتج المجاني يجب أن يكون من نظام مختلف!', 'warning'); return; }
+            if (selectedFreeProduct.price > 500) { showNotification('المنتج المجاني يجب أن يكون سعره 500 ₪ أو أقل!', 'warning'); return; }
+            // التحقق: لا يمكن اختيار منتج مضاف بالسلة أساساً
+            if (selectedStep1Products.some(p => isProductInCart(p.id)) || isProductInCart(selectedFreeProduct.id)) { showNotification('أحد المنتجات مضاف بالسلة بالفعل!', 'warning'); return; }
+            // التحقق: المنتج المجاني ليس أحد المنتجين المختارين
+            if (selectedStep1Products.some(p => p.id === selectedFreeProduct.id)) { showNotification('لا يمكن اختيار نفس المنتج!', 'warning'); return; }
             const uniqueId = Date.now() + Math.random();
-            [...selectedStep1Products, { ...selectedFreeProduct, price: 0 }].forEach(p => { cart.push({ type: 'product', id: p.id, uniqueId: uniqueId + Math.random(), displayName: `${p.name} (${p.os})`, price: p.price, quantity: 1 }); });
-            saveCart(); updateCartUI();
+            const freeItem = { ...selectedFreeProduct, price: 0 };
+            [...selectedStep1Products, freeItem].forEach(p => { cart.push({ type: 'product', id: p.id, uniqueId: uniqueId + Math.random(), displayName: `${p.name} (${p.os})${p.price === 0 ? ' - مجاني' : ''}`, price: p.price, quantity: 1 }); });
+            saveCart(); updateCartUI(); updateAllAddButtons();
             showNotification(`تم إضافة المنتجين + ${selectedFreeProduct.name} مجاناً!`, 'success');
             document.getElementById('specialStep2Modal').classList.remove('active');
             document.getElementById('specialModal').classList.remove('active');
