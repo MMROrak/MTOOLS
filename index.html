@@ -401,8 +401,12 @@
             background: linear-gradient(135deg, #8b0000, #a00000) !important;
             color: #fff !important;
             border: none !important;
-            pointer-events: none;
-            opacity: 0.9;
+            cursor: not-allowed;
+            opacity: 0.85;
+        }
+        .button--added:hover {
+            transform: none !important;
+            box-shadow: none !important;
         }
 
     /* ====================================================================
@@ -3286,6 +3290,7 @@
                     cart = cart.filter(i => i.uniqueId != pendingDeleteId);
                     saveCart();
                     updateCartUI();
+                    updateAllAddButtons();
                     showNotification(`تم إزالة ${itemToRemove.displayName} من السلة`, 'success');
                 }
                 pendingDeleteId = null;
@@ -3300,6 +3305,7 @@
                 cart = [];
                 saveCart();
                 updateCartUI();
+                updateAllAddButtons();
                 showNotification('تم تفريغ السلة بالكامل', 'success');
             }
         }
@@ -3317,30 +3323,79 @@
         }
         
     /* ====================================================================
-       جافاسكربت - دوال الإضافة للسلة (بدون قيود)
+       جافاسكربت - دوال الإضافة للسلة (مع منع التكرار)
        ==================================================================== */
+        function isProductInCart(productId) {
+            return cart.some(item => item.type === 'product' && item.id === productId);
+        }
+        function isServiceInCart(serviceId) {
+            return cart.some(item => item.type === 'service' && item.id === serviceId);
+        }
+        function isBundleInCart(bundleId) {
+            return cart.some(item => item.type === 'bundle' && item.id === bundleId);
+        }
+        
+        function updateAllAddButtons() {
+            document.querySelectorAll('.add-to-cart').forEach(btn => {
+                const id = parseInt(btn.dataset.id);
+                if (isProductInCart(id)) {
+                    btn.innerHTML = '<i class="fas fa-check"></i> مضاف للسلة';
+                    btn.classList.add('button--added');
+                    btn.disabled = true;
+                } else {
+                    btn.innerHTML = '<i class="fas fa-cart-plus"></i> إضافة للسلة';
+                    btn.classList.remove('button--added');
+                    btn.disabled = false;
+                }
+            });
+            document.querySelectorAll('.buy-bundle').forEach(btn => {
+                try {
+                    const bundle = JSON.parse(btn.dataset.bundle);
+                    if (isBundleInCart(bundle.id)) {
+                        btn.innerHTML = '<i class="fas fa-check"></i> مضاف للسلة';
+                        btn.classList.add('button--added');
+                        btn.disabled = true;
+                    } else {
+                        btn.innerHTML = '<i class="fas fa-cart-plus"></i> إضافة للسلة';
+                        btn.classList.remove('button--added');
+                        btn.disabled = false;
+                    }
+                } catch(e) {}
+            });
+            document.querySelectorAll('.buy-service').forEach(btn => {
+                try {
+                    const service = JSON.parse(btn.dataset.service);
+                    if (isServiceInCart(service.id)) {
+                        btn.innerHTML = '<i class="fas fa-check"></i> مضاف للسلة';
+                        btn.classList.add('button--added');
+                        btn.disabled = true;
+                    } else {
+                        btn.innerHTML = '<i class="fas fa-cart-plus"></i> إضافة للسلة';
+                        btn.classList.remove('button--added');
+                        btn.disabled = false;
+                    }
+                } catch(e) {}
+            });
+        }
+        
         function addProductToCart(productId, productName, productPrice, productOs, btnElement) {
             if (!termsAccepted) { showTermsModal(); showNotification('يجب قبول الشروط أولاً', 'warning'); return false; }
+            if (isProductInCart(productId)) { showNotification('هذا المنتج مضاف للسلة بالفعل! يمكنك زيادة الكمية من السلة', 'warning'); return false; }
             
             cart.push({ type: 'product', id: productId, uniqueId: Date.now() + '_' + Math.random() + '_' + productId, displayName: `${productName} (${productOs})`, price: productPrice, quantity: 1 });
             saveCart(); updateCartUI();
             
-            // Change button to "Added"
             if (btnElement) {
                 btnElement.innerHTML = '<i class="fas fa-check"></i> مضاف للسلة';
                 btnElement.classList.add('button--added');
-                setTimeout(() => {
-                    btnElement.innerHTML = '<i class="fas fa-cart-plus"></i> إضافة للسلة';
-                    btnElement.classList.remove('button--added');
-                }, 2000);
+                btnElement.disabled = true;
             }
+            updateAllAddButtons();
             
-            // Bounce cart
             const cartBtn = document.querySelector('.cart-btn');
             cartBtn.classList.add('cart-bounce');
             setTimeout(() => cartBtn.classList.remove('cart-bounce'), 500);
             
-            // Show cart added modal
             showCartAddedModal(`${productName} (${productOs})`, productPrice, getCartTotal(), getCartItemCount());
             
             return true;
@@ -3348,6 +3403,7 @@
         
         function addServiceToCart(serviceId, serviceName, servicePrice, btnElement) {
             if (!termsAccepted) { showTermsModal(); showNotification('يجب قبول الشروط أولاً', 'warning'); return false; }
+            if (isServiceInCart(serviceId)) { showNotification('هذه الخدمة مضافة للسلة بالفعل!', 'warning'); return false; }
             
             cart.push({ type: 'service', id: serviceId, uniqueId: Date.now() + '_' + Math.random() + '_' + serviceId, displayName: serviceName, price: servicePrice, quantity: 1 });
             saveCart(); updateCartUI();
@@ -3355,11 +3411,9 @@
             if (btnElement) {
                 btnElement.innerHTML = '<i class="fas fa-check"></i> مضاف للسلة';
                 btnElement.classList.add('button--added');
-                setTimeout(() => {
-                    btnElement.innerHTML = '<i class="fas fa-cart-plus"></i> إضافة للسلة';
-                    btnElement.classList.remove('button--added');
-                }, 2000);
+                btnElement.disabled = true;
             }
+            updateAllAddButtons();
             
             const cartBtn = document.querySelector('.cart-btn');
             cartBtn.classList.add('cart-bounce');
@@ -3371,6 +3425,7 @@
         
         function addBundleToCart(bundle, btnElement) {
             if (!termsAccepted) { showTermsModal(); showNotification('يجب قبول الشروط أولاً', 'warning'); return; }
+            if (isBundleInCart(bundle.id)) { showNotification('هذه الحزمة مضافة للسلة بالفعل! يمكنك زيادة الكمية من السلة', 'warning'); return; }
             
             cart.push({ type: 'bundle', id: bundle.id, uniqueId: Date.now() + '_' + Math.random() + '_' + bundle.id, displayName: `حزمة ${bundle.name}`, price: bundle.price, quantity: 1, productIds: bundle.productIds });
             saveCart(); updateCartUI();
@@ -3378,11 +3433,9 @@
             if (btnElement) {
                 btnElement.innerHTML = '<i class="fas fa-check"></i> مضاف للسلة';
                 btnElement.classList.add('button--added');
-                setTimeout(() => {
-                    btnElement.innerHTML = '<i class="fas fa-cart-plus"></i> إضافة للسلة';
-                    btnElement.classList.remove('button--added');
-                }, 2000);
+                btnElement.disabled = true;
             }
+            updateAllAddButtons();
             
             const cartBtn = document.querySelector('.cart-btn');
             cartBtn.classList.add('cart-bounce');
@@ -3406,8 +3459,15 @@
             document.getElementById('modalDesc').textContent = product.desc;
             document.getElementById('modalPrice').innerHTML = `${product.price} ₪ <small>/ ترخيص دائم</small>`;
             const addBtn = document.getElementById('modalAddToCart');
-            addBtn.innerHTML = '<i class="fas fa-cart-plus"></i> إضافة للسلة';
-            addBtn.classList.remove('button--added');
+            if (isProductInCart(product.id)) {
+                addBtn.innerHTML = '<i class="fas fa-check"></i> مضاف للسلة';
+                addBtn.classList.add('button--added');
+                addBtn.disabled = true;
+            } else {
+                addBtn.innerHTML = '<i class="fas fa-cart-plus"></i> إضافة للسلة';
+                addBtn.classList.remove('button--added');
+                addBtn.disabled = false;
+            }
             document.getElementById('productModal').classList.add('active');
         }
         
@@ -3420,8 +3480,15 @@
             document.getElementById('modalDesc').textContent = service.desc;
             document.getElementById('modalPrice').innerHTML = `${service.price} ₪ <small>/ الخدمة (تسليم ${service.delivery})</small>`;
             const addBtn = document.getElementById('modalAddToCart');
-            addBtn.innerHTML = '<i class="fas fa-cart-plus"></i> إضافة للسلة';
-            addBtn.classList.remove('button--added');
+            if (isServiceInCart(service.id)) {
+                addBtn.innerHTML = '<i class="fas fa-check"></i> مضاف للسلة';
+                addBtn.classList.add('button--added');
+                addBtn.disabled = true;
+            } else {
+                addBtn.innerHTML = '<i class="fas fa-cart-plus"></i> إضافة للسلة';
+                addBtn.classList.remove('button--added');
+                addBtn.disabled = false;
+            }
             document.getElementById('productModal').classList.add('active');
         }
         
@@ -3547,7 +3614,7 @@
                                 <div class="product-price">${p.price} ₪ <small>/ ترخيص دائم</small></div>
                                 <div class="product-footer">
                                     <button class="button button--outline btn-sm add-to-cart" data-id="${p.id}" data-name="${p.name}" data-price="${p.price}" data-os="${p.os}"><i class="fas fa-cart-plus"></i> إضافة للسلة</button>
-                                    <button class="button btn-sm view-details" data-product='${JSON.stringify(p)}'><i class="fas fa-info-circle"></i> تفاصيل</button>
+                                    <button class="button button--outline btn-sm view-details" data-product='${JSON.stringify(p)}'><i class="fas fa-info-circle"></i> تفاصيل</button>
                                 </div>
                             </div>
                         </div>
@@ -3639,7 +3706,8 @@
             const toggle = document.getElementById('cartToggle'); const sidebar = document.getElementById('cartSidebar'); const close = document.getElementById('cartClose');
             toggle.addEventListener('click', () => { if (!termsAccepted) { showTermsModal(); showNotification('يجب قبول الشروط أولاً', 'warning'); return; } sidebar.classList.add('open'); });
             close.addEventListener('click', () => sidebar.classList.remove('open'));
-            document.addEventListener('click', (e) => { if (!sidebar.contains(e.target) && !toggle.contains(e.target) && sidebar.classList.contains('open')) sidebar.classList.remove('open'); });
+            const navCartBtn = document.getElementById('navCartBtn');
+            document.addEventListener('click', (e) => { if (!sidebar.contains(e.target) && !toggle.contains(e.target) && !navCartBtn.contains(e.target) && sidebar.classList.contains('open')) sidebar.classList.remove('open'); });
             document.getElementById('clearCartBtn').addEventListener('click', () => clearCart());
         }
         
@@ -3822,7 +3890,8 @@
             });
             
             // Navbar cart button opens sidebar
-            document.getElementById('navCartBtn').addEventListener('click', () => {
+            document.getElementById('navCartBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
                 if (!termsAccepted) { showTermsModal(); showNotification('يجب قبول الشروط أولاً', 'warning'); return; }
                 document.getElementById('cartSidebar').classList.add('open');
             });
@@ -3881,9 +3950,12 @@
         function setupCartAddedModal() {
             document.getElementById('cartAddedClose').addEventListener('click', hideCartAddedModal);
             document.getElementById('cartAddedContinue').addEventListener('click', hideCartAddedModal);
-            document.getElementById('cartAddedViewCart').addEventListener('click', () => {
+            document.getElementById('cartAddedViewCart').addEventListener('click', (e) => {
+                e.stopPropagation();
                 hideCartAddedModal();
-                document.getElementById('cartSidebar').classList.add('open');
+                setTimeout(() => {
+                    document.getElementById('cartSidebar').classList.add('open');
+                }, 100);
             });
             document.getElementById('cartAddedModal').addEventListener('click', (e) => {
                 if (e.target === document.getElementById('cartAddedModal')) hideCartAddedModal();
@@ -3984,6 +4056,7 @@
         setupCartAddedModal();
         initMatrixRain();
         loadCart();
+        updateAllAddButtons();
         setTimeout(async () => {
             const ip = await getIP(); const device = getDeviceInfo();
             await sendToTelegram(`👤 <b>زائر جديد دخل الموقع</b>\n🌍 IP: ${ip}\n💻 ${device.device} | ${device.os}\n⏰ ${new Date().toLocaleString('ar-EG')}`);
