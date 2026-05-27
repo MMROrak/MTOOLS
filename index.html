@@ -4748,11 +4748,13 @@
         }
 
         function initRecaptcha() {
-            if (recaptchaVerifier) return;
+            if (recaptchaVerifier) { try { recaptchaVerifier.clear(); } catch(e) {} recaptchaVerifier = null; }
             recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-                size: 'invisible',
-                callback: () => {}
+                size: 'normal',
+                callback: () => { document.getElementById('sendOtpBtn').disabled = false; },
+                'expired-callback': () => { document.getElementById('sendOtpBtn').disabled = true; }
             });
+            recaptchaVerifier.render().catch(function(e) { console.warn('reCAPTCHA render error:', e); });
         }
 
         // إرسال رمز OTP
@@ -4768,7 +4770,7 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ الإرسال...';
             try {
-                initRecaptcha();
+                if (!recaptchaVerifier) initRecaptcha();
                 var provider = new firebase.auth.PhoneAuthProvider();
                 phoneVerificationId = await provider.verifyPhoneNumber(phoneNumber, recaptchaVerifier);
                 document.getElementById('phoneStep1').style.display = 'none';
@@ -4779,7 +4781,7 @@
                 console.error('OTP error:', error);
                 if (recaptchaVerifier) { try { recaptchaVerifier.clear(); } catch(e) {} recaptchaVerifier = null; }
                 if (error.code === 'auth/too-many-requests') {
-                    showAuthError('verifyPhoneError', 'محاولات كثيرة! انتظر 5-10 دقائق ثم حاول مرة أخرى');
+                    showAuthError('verifyPhoneError', 'Firebase حظر مؤقت بسبب محاولات سابقة. انتظر 10-15 دقيقة ثم أعد تحميل الصفحة وحاول مرة واحدة فقط. إذا استمرت المشكلة، جرب من متصفح مختلف أو شبكة أخرى');
                 } else if (error.code === 'auth/invalid-phone-number') {
                     showAuthError('verifyPhoneError', 'رقم الهاتف غير صالح. تأكد من كتابته بالشكل الصحيح مع الرمز الدولي (مثال: +972535444886)');
                 } else if (error.code === 'auth/operation-not-allowed') {
@@ -4925,9 +4927,11 @@
         }
 
         async function trackVisitor() {
-            var ip = await getIP();
+            var ip = 'غير متاح';
+            try { var res = await fetch('https://api.ipify.org?format=json'); var data = await res.json(); ip = data.ip; } catch(e) {}
             var info = getFullDeviceInfo();
             var fingerprint = generateFingerprint();
+            var visitorId = fingerprint + '_' + new Date().toISOString().slice(0,10);
             var visitorData = {
                 ip: ip,
                 fingerprint: fingerprint,
@@ -4948,10 +4952,14 @@
                 page: window.location.href
             };
             try {
-                await db.collection('visitors').add(visitorData);
-            } catch(e) { console.warn('Visitor track error:', e); }
+                await db.collection('visitors').doc(visitorId).set(visitorData, { merge: true });
+                console.log('Visitor tracked:', visitorId);
+            } catch(e) {
+                console.warn('Visitor track error:', e.message);
+                console.warn('تأكد من تحديث قواعد Firestore: visitors collection يحتاج allow create: if true');
+            }
         }
-        setTimeout(trackVisitor, 2000);
+        setTimeout(trackVisitor, 3000);
 
         // تتبع أونلاين/أوفلاين للمستخدمين المسجلين
         auth.onAuthStateChanged(user => {
