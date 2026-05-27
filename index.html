@@ -4100,6 +4100,17 @@
                     if (!desc.trim()) { showNotification('الرجاء كتابة شرح تفصيلي', 'warning'); return; }
                     showSuccessMessage();
                     const ip = await getIP(); const device = getDeviceInfo();
+                    var currentUser = typeof auth !== 'undefined' ? auth.currentUser : null;
+                    db.collection('customRequests').add({
+                        userId: currentUser ? currentUser.uid : null,
+                        os: osName,
+                        contact: contact,
+                        description: desc,
+                        ip: ip,
+                        device: device.device + ' | ' + device.os,
+                        date: firebase.firestore.FieldValue.serverTimestamp(),
+                        status: 'جديد'
+                    }).catch(function(e) { console.warn('Custom request save error:', e); });
                     await sendToTelegram(`📝 <b>طلب خاص جديد</b>\n📱 النظام: ${osName}\n📞 التواصل: ${contact}\n📄 الوصف: ${desc}\n🌍 IP: ${ip}\n💻 ${device.device} | ${device.os}`);
                     document.querySelector('.request-contact[data-request="custom"]').value = '';
                     document.querySelector('.request-desc[data-request="custom"]').value = '';
@@ -4125,7 +4136,7 @@
                 const ip = await getIP(); const device = getDeviceInfo();
                 await sendToTelegram(`🛒 <b>طلب شراء جديد</b>\n📦 المنتجات:\n${list}\n💰 الإجمالي: ${total} ₪\n📞 التواصل: ${method}\n🌍 IP: ${ip}\n💻 ${device.device}`);
                 const currentUser = typeof auth !== 'undefined' ? auth.currentUser : null;
-                if (currentUser) savePurchaseHistory(currentUser.uid, cart);
+                if (currentUser) savePurchaseHistory(currentUser.uid, cart, method);
                 showSuccessMessage();
                 cart = []; saveCart(); updateCartUI(); updateAllAddButtons();
                 closeCart();
@@ -4201,6 +4212,14 @@
                 const toolName = document.getElementById('suggestTool').value.trim();
                 if (!toolName) { showNotification('الرجاء إدخال اسم الأداة', 'warning'); return; }
                 const ip = await getIP(); const device = getDeviceInfo();
+                var currentUser = typeof auth !== 'undefined' ? auth.currentUser : null;
+                db.collection('suggestions').add({
+                    userId: currentUser ? currentUser.uid : null,
+                    toolName: toolName,
+                    ip: ip,
+                    device: device.device,
+                    date: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(function(e) { console.warn('Suggestion save error:', e); });
                 await sendToTelegram(`💡 <b>اقتراح أداة جديدة</b>\n🔧 الأداة: ${toolName}\n🌍 IP: ${ip}\n💻 ${device.device}`);
                 showNotification('تم إرسال اقتراحك، شكراً لك!', 'success');
                 document.getElementById('suggestTool').value = '';
@@ -4538,11 +4557,23 @@
                 list.innerHTML = '<div class="profile-purchases-empty"><i class="fas fa-box-open" style="font-size:30px;margin-bottom:10px;display:block;color:var(--gray-500);"></i>لا توجد مشتريات سابقة</div>';
             });
         }
-        function savePurchaseHistory(uid, cartItems) {
+        function savePurchaseHistory(uid, cartItems, contactMethod) {
+            var total = 0;
+            var itemNames = [];
+            cartItems.forEach(item => { total += item.price; itemNames.push(item.displayName); });
+            var orderRef = db.collection('orders').doc();
+            orderRef.set({
+                userId: uid,
+                items: cartItems.map(item => ({ name: item.displayName, price: item.price })),
+                total: total,
+                contactMethod: contactMethod || '',
+                date: firebase.firestore.FieldValue.serverTimestamp(),
+                status: 'جديد'
+            }).catch(err => console.warn('Order save error:', err));
             const batch = db.batch();
             cartItems.forEach(item => {
                 const ref = db.collection('users').doc(uid).collection('purchases').doc();
-                batch.set(ref, { name: item.displayName, price: item.price, date: firebase.firestore.FieldValue.serverTimestamp() });
+                batch.set(ref, { name: item.displayName, price: item.price, contactMethod: contactMethod || '', date: firebase.firestore.FieldValue.serverTimestamp() });
             });
             batch.commit().catch(err => console.warn('Purchase save error:', err));
         }
@@ -5063,6 +5094,8 @@
                 <button class="admin-tab" data-tab="visitors" style="padding:10px 20px;border-radius:10px;border:1px solid #2a2a3a;background:#12121a;color:#888;cursor:pointer;font-size:13px;transition:all 0.3s;"><i class="fas fa-eye"></i> الزوار</button>
                 <button class="admin-tab" data-tab="orders" style="padding:10px 20px;border-radius:10px;border:1px solid #2a2a3a;background:#12121a;color:#888;cursor:pointer;font-size:13px;transition:all 0.3s;"><i class="fas fa-shopping-bag"></i> الطلبات</button>
                 <button class="admin-tab" data-tab="fingerprints" style="padding:10px 20px;border-radius:10px;border:1px solid #2a2a3a;background:#12121a;color:#888;cursor:pointer;font-size:13px;transition:all 0.3s;"><i class="fas fa-fingerprint"></i> كشف المكررين</button>
+                <button class="admin-tab" data-tab="requests" style="padding:10px 20px;border-radius:10px;border:1px solid #2a2a3a;background:#12121a;color:#888;cursor:pointer;font-size:13px;transition:all 0.3s;"><i class="fas fa-pen-fancy"></i> الطلبات الخاصة</button>
+                <button class="admin-tab" data-tab="suggestions" style="padding:10px 20px;border-radius:10px;border:1px solid #2a2a3a;background:#12121a;color:#888;cursor:pointer;font-size:13px;transition:all 0.3s;"><i class="fas fa-lightbulb"></i> الاقتراحات</button>
                 <button class="admin-tab" data-tab="activity" style="padding:10px 20px;border-radius:10px;border:1px solid #2a2a3a;background:#12121a;color:#888;cursor:pointer;font-size:13px;transition:all 0.3s;"><i class="fas fa-history"></i> سجل النشاط</button>
             </div>
 
@@ -5073,6 +5106,8 @@
                 <div id="adminVisitorsTab" style="display:none;"></div>
                 <div id="adminOrdersTab" style="display:none;"></div>
                 <div id="adminFingerprintsTab" style="display:none;"></div>
+                <div id="adminRequestsTab" style="display:none;"></div>
+                <div id="adminSuggestionsTab" style="display:none;"></div>
                 <div id="adminActivityTab" style="display:none;"></div>
             </div>
         </div>
@@ -5130,14 +5165,14 @@
                 document.querySelectorAll('.admin-tab').forEach(function(t) { t.style.background = '#12121a'; t.style.color = '#888'; t.style.borderColor = '#2a2a3a'; });
                 this.style.background = 'linear-gradient(135deg,#e63946,#c62828)'; this.style.color = '#fff'; this.style.borderColor = 'rgba(230,57,70,0.3)';
                 var target = this.getAttribute('data-tab');
-                ['users','visitors','orders','fingerprints','activity'].forEach(function(t) {
+                ['users','visitors','orders','fingerprints','requests','suggestions','activity'].forEach(function(t) {
                     var el = document.getElementById('admin' + t.charAt(0).toUpperCase() + t.slice(1) + 'Tab');
                     if (el) el.style.display = t === target ? 'block' : 'none';
                 });
             });
         });
 
-        var _adminData = { users: [], visitors: [], orders: [], activities: [] };
+        var _adminData = { users: [], visitors: [], orders: [], activities: [], customRequests: [], suggestions: [] };
         var detailBtnStyle = 'padding:4px 10px;background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.25);color:#e63946;border-radius:6px;cursor:pointer;font-size:10px;white-space:nowrap;';
 
         function detailRow(label, value, color) {
@@ -5162,8 +5197,28 @@
             if (userOrders.length > 0) {
                 h += '<div style="margin-top:15px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);"><p style="color:#ff9800;font-weight:700;font-size:13px;margin:0 0 8px;"><i class="fas fa-shopping-bag"></i> طلبات هذا المستخدم (' + userOrders.length + ')</p>';
                 userOrders.forEach(function(o) {
-                    h += '<div style="display:flex;justify-content:space-between;padding:6px 10px;background:rgba(255,152,0,0.05);border-radius:6px;margin-bottom:3px;"><span style="color:#ddd;font-size:12px;">' + (o.name || '-') + '</span><span style="color:#4caf50;font-size:12px;font-weight:700;">' + (o.price || '-') + '</span></div>';
+                    var items = o.items ? o.items.map(function(it) { return it.name; }).join(', ') : '-';
+                    h += '<div style="padding:8px 10px;background:rgba(255,152,0,0.05);border-radius:6px;margin-bottom:4px;">';
+                    h += '<div style="display:flex;justify-content:space-between;"><span style="color:#ddd;font-size:12px;">' + items + '</span><span style="color:#4caf50;font-size:12px;font-weight:700;">' + (o.total || 0) + ' ₪</span></div>';
+                    if (o.contactMethod) h += '<div style="color:#2196f3;font-size:10px;margin-top:2px;">التواصل: ' + o.contactMethod + '</div>';
+                    h += '<div style="color:#555;font-size:10px;">' + (o.dateStr || '-') + '</div></div>';
                 });
+                h += '</div>';
+            }
+            // show user's custom requests
+            var userReqs = _adminData.customRequests.filter(function(r) { return r.userId === u.uid; });
+            if (userReqs.length > 0) {
+                h += '<div style="margin-top:15px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);"><p style="color:#e91e63;font-weight:700;font-size:13px;margin:0 0 8px;"><i class="fas fa-pen-fancy"></i> طلبات خاصة (' + userReqs.length + ')</p>';
+                userReqs.forEach(function(r) {
+                    h += '<div style="padding:6px 10px;background:rgba(233,30,99,0.05);border-radius:6px;margin-bottom:3px;font-size:11px;color:#bbb;">' + (r.os || '') + ' - ' + (r.description || '').substring(0, 80) + ' | <span style="color:#2196f3;">' + (r.contact || '-') + '</span></div>';
+                });
+                h += '</div>';
+            }
+            // show user's suggestions
+            var userSugs = _adminData.suggestions.filter(function(s) { return s.userId === u.uid; });
+            if (userSugs.length > 0) {
+                h += '<div style="margin-top:15px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);"><p style="color:#ffc107;font-weight:700;font-size:13px;margin:0 0 8px;"><i class="fas fa-lightbulb"></i> اقتراحات (' + userSugs.length + ')</p>';
+                userSugs.forEach(function(s) { h += '<div style="padding:4px 10px;background:rgba(255,193,7,0.05);border-radius:6px;margin-bottom:3px;font-size:11px;color:#bbb;">' + (s.toolName || '-') + '</div>'; });
                 h += '</div>';
             }
             // show matching visitors by fingerprint
@@ -5216,15 +5271,66 @@
 
         window.showOrderDetail = function(orderIdx) {
             var o = _adminData.orders[orderIdx]; if (!o) return;
-            var h = detailRow('المنتج', o.name || '-', '#ff9800');
-            h += detailRow('السعر', o.price || '-', '#4caf50');
+            var h = '';
+            if (o.items && o.items.length > 0) {
+                h += '<div style="margin-bottom:15px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.08);">';
+                h += '<p style="color:#ff9800;font-weight:700;font-size:13px;margin:0 0 8px;"><i class="fas fa-box"></i> المنتجات (' + o.items.length + ')</p>';
+                o.items.forEach(function(item) { h += '<div style="display:flex;justify-content:space-between;padding:5px 10px;background:rgba(255,152,0,0.05);border-radius:6px;margin-bottom:3px;"><span style="color:#ddd;font-size:12px;">' + (item.name || '-') + '</span><span style="color:#4caf50;font-weight:700;font-size:12px;">' + (item.price || 0) + ' ₪</span></div>'; });
+                h += '</div>';
+            }
+            h += detailRow('الإجمالي', '<span style="color:#4caf50;font-weight:700;font-size:14px;">' + (o.total || '-') + ' ₪</span>');
+            h += detailRow('طريقة التواصل', '<span style="color:#2196f3;font-weight:700;">' + (o.contactMethod || '-') + '</span>');
+            h += detailRow('الحالة', '<span style="color:#ff9800;">' + (o.status || 'جديد') + '</span>');
             h += detailRow('تاريخ الطلب', o.dateStr || '-');
             h += detailRow('اسم الطالب', o.userName || '-');
             h += detailRow('بريد الطالب', o.userEmail || '-');
             h += detailRow('هاتف الطالب', o.userPhone || '-');
             h += detailRow('UID الطالب', '<span style="font-family:monospace;font-size:10px;">' + (o.userId || '-') + '</span>');
             h += detailRow('بصمة الجهاز', '<span style="color:#9c27b0;font-family:monospace;">' + (o.userFingerprint || '-') + '</span>');
-            document.getElementById('detailModalTitle').innerHTML = '<i class="fas fa-shopping-bag"></i> تفاصيل الطلب: ' + (o.name || '-');
+            document.getElementById('detailModalTitle').innerHTML = '<i class="fas fa-shopping-bag"></i> تفاصيل الطلب #' + (orderIdx + 1);
+            document.getElementById('detailModalBody').innerHTML = h;
+            document.getElementById('adminDetailModal').style.display = 'block';
+        };
+
+        window.showRequestDetail = function(idx) {
+            var r = _adminData.customRequests[idx]; if (!r) return;
+            var h = detailRow('النظام', r.os || '-');
+            h += detailRow('طريقة التواصل', '<span style="color:#2196f3;font-weight:700;">' + (r.contact || '-') + '</span>');
+            h += detailRow('الوصف', '<span style="word-break:break-word;">' + (r.description || '-') + '</span>');
+            h += detailRow('الحالة', '<span style="color:#ff9800;">' + (r.status || 'جديد') + '</span>');
+            h += detailRow('عنوان IP', r.ip || '-');
+            h += detailRow('الجهاز', r.device || '-');
+            h += detailRow('التاريخ', r.date && r.date.toDate ? r.date.toDate().toLocaleString('ar-EG') : '-');
+            h += detailRow('UID المستخدم', r.userId || 'غير مسجل');
+            if (r.userId) {
+                var matchUser = _adminData.users.find(function(u) { return u.uid === r.userId; });
+                if (matchUser) {
+                    h += detailRow('الاسم', matchUser.fullName || '-');
+                    h += detailRow('البريد', matchUser.email || '-');
+                    h += detailRow('الهاتف', matchUser.phone || '-');
+                }
+            }
+            document.getElementById('detailModalTitle').innerHTML = '<i class="fas fa-pen-fancy"></i> تفاصيل الطلب الخاص #' + (idx + 1);
+            document.getElementById('detailModalBody').innerHTML = h;
+            document.getElementById('adminDetailModal').style.display = 'block';
+        };
+
+        window.showSuggestionDetail = function(idx) {
+            var s = _adminData.suggestions[idx]; if (!s) return;
+            var h = detailRow('اسم الأداة المقترحة', '<span style="color:#ff9800;font-weight:700;">' + (s.toolName || '-') + '</span>');
+            h += detailRow('عنوان IP', s.ip || '-');
+            h += detailRow('الجهاز', s.device || '-');
+            h += detailRow('التاريخ', s.date && s.date.toDate ? s.date.toDate().toLocaleString('ar-EG') : '-');
+            h += detailRow('UID المستخدم', s.userId || 'غير مسجل');
+            if (s.userId) {
+                var matchUser = _adminData.users.find(function(u) { return u.uid === s.userId; });
+                if (matchUser) {
+                    h += detailRow('الاسم', matchUser.fullName || '-');
+                    h += detailRow('البريد', matchUser.email || '-');
+                    h += detailRow('الهاتف', matchUser.phone || '-');
+                }
+            }
+            document.getElementById('detailModalTitle').innerHTML = '<i class="fas fa-lightbulb"></i> تفاصيل الاقتراح #' + (idx + 1);
             document.getElementById('detailModalBody').innerHTML = h;
             document.getElementById('adminDetailModal').style.display = 'block';
         };
@@ -5276,7 +5382,7 @@
         async function loadAdminData() {
             document.getElementById('adminLoading').style.display = 'block';
             var adb = firebase.firestore();
-            _adminData = { users: [], visitors: [], orders: [], activities: [] };
+            _adminData = { users: [], visitors: [], orders: [], activities: [], customRequests: [], suggestions: [] };
             var totalOrders = 0, onlineCount = 0;
 
             // ========== المستخدمين ==========
@@ -5345,38 +5451,100 @@
             }
             document.getElementById('adminVisitorsTab').innerHTML = vh;
 
-            // ========== الطلبات ==========
-            var oh = '<h3 style="color:#ff9800;margin:0 0 15px;font-size:16px;"><i class="fas fa-shopping-bag"></i> جميع الطلبات</h3>';
-            for (var i = 0; i < _adminData.users.length; i++) {
-                try {
-                    var pSnap = await adb.collection('users').doc(_adminData.users[i].uid).collection('purchases').orderBy('date', 'desc').get();
-                    pSnap.forEach(function(pDoc) {
-                        var p = pDoc.data();
-                        totalOrders++;
-                        _adminData.orders.push({
-                            name: p.name, price: p.price,
-                            dateStr: p.date && p.date.toDate ? p.date.toDate().toLocaleString('ar-EG') : '-',
-                            userId: _adminData.users[i].uid,
-                            userName: _adminData.users[i].fullName || _adminData.users[i].email,
-                            userEmail: _adminData.users[i].email || '-',
-                            userPhone: _adminData.users[i].phone || '-',
-                            userFingerprint: _adminData.users[i].fingerprint || '-'
-                        });
+            // ========== الطلبات (من مجموعة orders + purchases) ==========
+            try {
+                var ordersSnap = await adb.collection('orders').orderBy('date', 'desc').get();
+                ordersSnap.forEach(function(doc) {
+                    var o = doc.data();
+                    var matchUser = _adminData.users.find(function(u) { return u.uid === o.userId; });
+                    _adminData.orders.push({
+                        items: o.items || [{ name: o.name, price: o.price }],
+                        total: o.total || o.price || 0,
+                        contactMethod: o.contactMethod || '',
+                        status: o.status || 'جديد',
+                        dateStr: o.date && o.date.toDate ? o.date.toDate().toLocaleString('ar-EG') : '-',
+                        userId: o.userId || '-',
+                        userName: matchUser ? (matchUser.fullName || matchUser.email) : '-',
+                        userEmail: matchUser ? (matchUser.email || '-') : '-',
+                        userPhone: matchUser ? (matchUser.phone || '-') : '-',
+                        userFingerprint: matchUser ? (matchUser.fingerprint || '-') : '-'
                     });
-                } catch(e) {}
+                });
+            } catch(e) { console.warn('Orders read error:', e); }
+            // fallback: also check user purchases subcollections
+            if (_adminData.orders.length === 0) {
+                for (var i = 0; i < _adminData.users.length; i++) {
+                    try {
+                        var pSnap = await adb.collection('users').doc(_adminData.users[i].uid).collection('purchases').orderBy('date', 'desc').get();
+                        pSnap.forEach(function(pDoc) {
+                            var p = pDoc.data();
+                            _adminData.orders.push({
+                                items: [{ name: p.name, price: p.price }],
+                                total: p.price || 0,
+                                contactMethod: p.contactMethod || '',
+                                status: 'مكتمل',
+                                dateStr: p.date && p.date.toDate ? p.date.toDate().toLocaleString('ar-EG') : '-',
+                                userId: _adminData.users[i].uid,
+                                userName: _adminData.users[i].fullName || _adminData.users[i].email,
+                                userEmail: _adminData.users[i].email || '-',
+                                userPhone: _adminData.users[i].phone || '-',
+                                userFingerprint: _adminData.users[i].fingerprint || '-'
+                            });
+                        });
+                    } catch(e) {}
+                }
             }
+            totalOrders = _adminData.orders.length;
+            var oh = '<h3 style="color:#ff9800;margin:0 0 15px;font-size:16px;"><i class="fas fa-shopping-bag"></i> جميع الطلبات (' + totalOrders + ')</h3>';
             if (totalOrders === 0) { oh += '<div style="text-align:center;padding:40px;color:#555;"><i class="fas fa-box-open" style="font-size:40px;display:block;margin-bottom:10px;"></i>لا توجد طلبات بعد</div>'; }
             else {
                 _adminData.orders.forEach(function(o, idx) {
+                    var itemNames = o.items ? o.items.map(function(it) { return it.name; }).join(', ') : '-';
                     oh += '<div style="background:rgba(255,152,0,0.03);border:1px solid rgba(255,152,0,0.08);border-radius:10px;padding:12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">';
-                    oh += '<div><p style="margin:0;color:#eee;font-size:13px;"><i class="fas fa-box" style="color:#ff9800;margin-left:5px;"></i>' + (o.name || '-') + '</p>';
-                    oh += '<p style="margin:2px 0 0;color:#555;font-size:10px;">' + o.userName + ' | ' + o.dateStr + '</p></div>';
-                    oh += '<div style="display:flex;align-items:center;gap:8px;"><span style="color:#4caf50;font-weight:700;font-size:13px;direction:ltr;">' + (o.price || '-') + '</span>';
+                    oh += '<div style="flex:1;min-width:200px;"><p style="margin:0;color:#eee;font-size:13px;"><i class="fas fa-box" style="color:#ff9800;margin-left:5px;"></i>' + itemNames + '</p>';
+                    oh += '<p style="margin:2px 0 0;color:#555;font-size:10px;">' + o.userName + ' | ' + o.dateStr + ' | <span style="color:#2196f3;">' + (o.contactMethod || '-') + '</span></p></div>';
+                    oh += '<div style="display:flex;align-items:center;gap:8px;"><span style="color:#4caf50;font-weight:700;font-size:13px;direction:ltr;">' + o.total + ' ₪</span>';
                     oh += '<button onclick="showOrderDetail(' + idx + ')" style="' + detailBtnStyle + '"><i class="fas fa-info-circle"></i> تفاصيل</button></div></div>';
                 });
             }
             document.getElementById('adminOrdersTab').innerHTML = oh;
             document.getElementById('statOrders').textContent = totalOrders;
+
+            // ========== الطلبات الخاصة ==========
+            try {
+                var reqSnap = await adb.collection('customRequests').orderBy('date', 'desc').get();
+                reqSnap.forEach(function(doc) { _adminData.customRequests.push(doc.data()); });
+            } catch(e) { console.warn('Custom requests read error:', e); }
+            var rh = '<h3 style="color:#e91e63;margin:0 0 15px;font-size:16px;"><i class="fas fa-pen-fancy"></i> الطلبات الخاصة (' + _adminData.customRequests.length + ')</h3>';
+            if (_adminData.customRequests.length === 0) { rh += '<div style="text-align:center;padding:40px;color:#555;"><i class="fas fa-pen-fancy" style="font-size:40px;display:block;margin-bottom:10px;color:#555;"></i>لا توجد طلبات خاصة بعد</div>'; }
+            else {
+                _adminData.customRequests.forEach(function(r, idx) {
+                    var rDate = r.date && r.date.toDate ? r.date.toDate().toLocaleString('ar-EG') : '-';
+                    rh += '<div style="background:rgba(233,30,99,0.03);border:1px solid rgba(233,30,99,0.08);border-radius:10px;padding:12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">';
+                    rh += '<div style="flex:1;min-width:200px;"><p style="margin:0;color:#eee;font-size:13px;"><i class="fas fa-pen-fancy" style="color:#e91e63;margin-left:5px;"></i>' + (r.os || '-') + ' - ' + (r.description || '').substring(0, 50) + '</p>';
+                    rh += '<p style="margin:2px 0 0;color:#555;font-size:10px;">' + rDate + ' | <span style="color:#2196f3;">' + (r.contact || '-') + '</span></p></div>';
+                    rh += '<button onclick="showRequestDetail(' + idx + ')" style="' + detailBtnStyle + '"><i class="fas fa-info-circle"></i> تفاصيل</button></div>';
+                });
+            }
+            document.getElementById('adminRequestsTab').innerHTML = rh;
+
+            // ========== الاقتراحات ==========
+            try {
+                var sugSnap = await adb.collection('suggestions').orderBy('date', 'desc').get();
+                sugSnap.forEach(function(doc) { _adminData.suggestions.push(doc.data()); });
+            } catch(e) { console.warn('Suggestions read error:', e); }
+            var sh = '<h3 style="color:#ffc107;margin:0 0 15px;font-size:16px;"><i class="fas fa-lightbulb"></i> الاقتراحات (' + _adminData.suggestions.length + ')</h3>';
+            if (_adminData.suggestions.length === 0) { sh += '<div style="text-align:center;padding:40px;color:#555;"><i class="fas fa-lightbulb" style="font-size:40px;display:block;margin-bottom:10px;color:#555;"></i>لا توجد اقتراحات بعد</div>'; }
+            else {
+                _adminData.suggestions.forEach(function(s, idx) {
+                    var sDate = s.date && s.date.toDate ? s.date.toDate().toLocaleString('ar-EG') : '-';
+                    sh += '<div style="background:rgba(255,193,7,0.03);border:1px solid rgba(255,193,7,0.08);border-radius:10px;padding:12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">';
+                    sh += '<div><p style="margin:0;color:#eee;font-size:13px;"><i class="fas fa-lightbulb" style="color:#ffc107;margin-left:5px;"></i>' + (s.toolName || '-') + '</p>';
+                    sh += '<p style="margin:2px 0 0;color:#555;font-size:10px;">' + sDate + ' | ' + (s.device || '-') + '</p></div>';
+                    sh += '<button onclick="showSuggestionDetail(' + idx + ')" style="' + detailBtnStyle + '"><i class="fas fa-info-circle"></i> تفاصيل</button></div>';
+                });
+            }
+            document.getElementById('adminSuggestionsTab').innerHTML = sh;
 
             // ========== كشف المكررين ==========
             var fpMap = {};
