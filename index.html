@@ -2946,14 +2946,16 @@
                     <p style="margin:0 0 5px;font-size:14px;color:#4caf50;font-weight:700;"><i class="fas fa-check-circle" style="margin-left:5px;"></i> تم إرسال رسالة SMS!</p>
                     <p style="margin:0;font-size:12px;color:var(--gray-400);">وصلت رسالة نصية تحتوي على رمز مكون من <strong style="color:var(--red-primary);">6 أرقام</strong> إلى رقمك:</p>
                 </div>
-                <p id="verifyPhoneDisplay" style="color:var(--red-primary);font-weight:700;font-size:1.2rem;direction:ltr;margin:5px 0 15px;"></p>
+                <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:5px 0 15px;">
+                    <p id="verifyPhoneDisplay" style="color:var(--red-primary);font-weight:700;font-size:1.2rem;direction:ltr;margin:0;"></p>
+                    <button id="changePhoneBtn" style="background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.3);color:var(--red-primary);padding:5px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:all 0.3s;"><i class="fas fa-edit" style="margin-left:4px;"></i> تعديل الرقم</button>
+                </div>
                 <div class="form-group" style="text-align:right;">
                     <label><i class="fas fa-key"></i> أدخل رمز التحقق الذي وصلك</label>
                     <input type="text" id="otpCodeInput" placeholder="123456" maxlength="6" style="direction:ltr;text-align:center;font-size:1.3rem;letter-spacing:8px;">
                 </div>
                 <button class="button button--cta" id="verifyOtpBtn" style="width:100%;margin-top:10px;"><i class="fas fa-check-circle"></i> تأكيد الرمز</button>
                 <button class="button button--outline" id="resendOtpBtn" style="width:100%;margin-top:8px;"><i class="fas fa-redo"></i> إعادة إرسال الرمز</button>
-                <button class="button button--outline" id="changePhoneBtn" style="width:100%;margin-top:8px;"><i class="fas fa-edit"></i> تعديل رقم الهاتف</button>
             </div>
             <div id="verifyPhoneError" style="color:#e63946;font-size:13px;margin-top:8px;display:none;"></div>
         </div>
@@ -4770,7 +4772,9 @@
                 if (error.code === 'auth/too-many-requests') {
                     showAuthError('verifyPhoneError', 'محاولات كثيرة! انتظر قليلاً ثم حاول مرة أخرى');
                 } else if (error.code === 'auth/invalid-phone-number') {
-                    showAuthError('verifyPhoneError', 'رقم الهاتف غير صالح. تأكد من إضافة رمز الدولة');
+                    showAuthError('verifyPhoneError', 'رقم الهاتف غير صالح. تأكد من كتابته بالشكل الصحيح مع الرمز الدولي (مثال: +972535444886)');
+                } else if (error.code === 'auth/operation-not-allowed') {
+                    showAuthError('verifyPhoneError', 'إرسال SMS غير مفعّل لهذه المنطقة. يجب تفعيل Phone في Firebase Console → Authentication → Sign-in method → Phone ثم تفعيل المنطقة في SMS region policy');
                 } else {
                     showAuthError('verifyPhoneError', 'حدث خطأ: ' + (error.message || 'حاول مرة أخرى'));
                 }
