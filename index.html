@@ -4978,269 +4978,317 @@
     </script>
 
     <!-- ==================== صفحة الأدمن ==================== -->
-    <div id="adminOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0a;z-index:99999;overflow-y:auto;">
+    <div id="adminOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#080810;z-index:99999;overflow-y:auto;font-family:'Segoe UI',Tahoma,sans-serif;">
 
         <!-- تسجيل دخول الأدمن -->
-        <div id="adminLoginBox" style="max-width:400px;margin:80px auto;padding:30px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:15px;text-align:center;">
-            <i class="fas fa-shield-alt" style="font-size:50px;color:var(--red-primary);margin-bottom:15px;"></i>
-            <h2 style="color:var(--gray-100);margin-bottom:5px;">لوحة تحكم الأدمن</h2>
-            <p style="color:var(--gray-500);font-size:12px;margin-bottom:20px;">منطقة محظورة - للمسؤولين فقط</p>
-            <div class="form-group" style="text-align:right;margin-bottom:12px;">
-                <label style="color:var(--gray-400);font-size:12px;"><i class="fas fa-user-shield"></i> اسم المسؤول</label>
-                <input type="text" id="adminUser" placeholder="أدخل اسم المسؤول" style="width:100%;padding:10px;background:var(--bg-darker);border:1px solid var(--border-color);border-radius:8px;color:var(--gray-200);font-size:14px;">
+        <div id="adminLoginBox" style="max-width:420px;margin:80px auto;padding:35px;background:linear-gradient(135deg,#12121a,#1a1a2e);border:1px solid rgba(230,57,70,0.2);border-radius:20px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+            <div style="width:80px;height:80px;margin:0 auto 15px;background:rgba(230,57,70,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;"><i class="fas fa-shield-alt" style="font-size:40px;color:#e63946;"></i></div>
+            <h2 style="color:#f1f1f1;margin-bottom:5px;font-size:22px;">لوحة تحكم RootZone</h2>
+            <p style="color:#666;font-size:12px;margin-bottom:25px;">منطقة محظورة - وصول المسؤولين فقط</p>
+            <div style="text-align:right;margin-bottom:14px;">
+                <label style="color:#888;font-size:11px;margin-bottom:4px;display:block;"><i class="fas fa-user-shield"></i> اسم المسؤول</label>
+                <input type="text" id="adminUser" placeholder="أدخل اسم المسؤول" style="width:100%;padding:12px 14px;background:#0d0d15;border:1px solid #2a2a3a;border-radius:10px;color:#e0e0e0;font-size:14px;box-sizing:border-box;">
             </div>
-            <div class="form-group" style="text-align:right;margin-bottom:12px;">
-                <label style="color:var(--gray-400);font-size:12px;"><i class="fas fa-lock"></i> كلمة المرور</label>
-                <input type="password" id="adminPass" placeholder="أدخل كلمة المرور" style="width:100%;padding:10px;background:var(--bg-darker);border:1px solid var(--border-color);border-radius:8px;color:var(--gray-200);font-size:14px;">
+            <div style="text-align:right;margin-bottom:14px;">
+                <label style="color:#888;font-size:11px;margin-bottom:4px;display:block;"><i class="fas fa-lock"></i> كلمة المرور</label>
+                <input type="password" id="adminPass" placeholder="أدخل كلمة المرور" style="width:100%;padding:12px 14px;background:#0d0d15;border:1px solid #2a2a3a;border-radius:10px;color:#e0e0e0;font-size:14px;box-sizing:border-box;">
             </div>
-            <div class="form-group" style="text-align:right;margin-bottom:12px;">
-                <label style="color:var(--gray-400);font-size:12px;"><i class="fas fa-key"></i> كلمة السر الإضافية (المفتاح السري)</label>
-                <input type="password" id="adminSecret" placeholder="أدخل المفتاح السري الطويل" style="width:100%;padding:10px;background:var(--bg-darker);border:1px solid var(--border-color);border-radius:8px;color:var(--gray-200);font-size:14px;">
+            <div style="text-align:right;margin-bottom:14px;">
+                <label style="color:#888;font-size:11px;margin-bottom:4px;display:block;"><i class="fas fa-key"></i> المفتاح السري</label>
+                <input type="password" id="adminSecret" placeholder="أدخل المفتاح السري الطويل" style="width:100%;padding:12px 14px;background:#0d0d15;border:1px solid #2a2a3a;border-radius:10px;color:#e0e0e0;font-size:14px;box-sizing:border-box;">
             </div>
-            <div id="adminLoginError" style="color:#e63946;font-size:12px;margin:8px 0;display:none;"></div>
-            <button id="adminLoginBtn" style="width:100%;padding:12px;background:var(--red-primary);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-top:5px;"><i class="fas fa-sign-in-alt"></i> دخول</button>
-            <p style="margin-top:15px;font-size:11px;color:var(--gray-600);"><i class="fas fa-exclamation-triangle"></i> 3 محاولات فاشلة = حظر 5 دقائق</p>
+            <div id="adminLoginError" style="color:#e63946;font-size:12px;margin:10px 0;display:none;background:rgba(230,57,70,0.1);padding:8px;border-radius:8px;"></div>
+            <button id="adminLoginBtn" style="width:100%;padding:14px;background:linear-gradient(135deg,#e63946,#c62828);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;transition:all 0.3s;"><i class="fas fa-sign-in-alt"></i> دخول لوحة التحكم</button>
+            <p style="margin-top:18px;font-size:10px;color:#555;"><i class="fas fa-exclamation-triangle" style="color:#e63946;"></i> 3 محاولات فاشلة = حظر 5 دقائق</p>
         </div>
 
         <!-- لوحة التحكم الرئيسية -->
-        <div id="adminDashboard" style="display:none;max-width:1200px;margin:20px auto;padding:0 15px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid var(--border-color);margin-bottom:20px;">
-                <h1 style="color:var(--red-primary);font-size:22px;margin:0;"><i class="fas fa-shield-alt"></i> RootZone Admin</h1>
-                <button id="adminLogoutBtn" style="padding:8px 16px;background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.3);color:var(--red-primary);border-radius:8px;cursor:pointer;font-size:12px;"><i class="fas fa-sign-out-alt"></i> خروج</button>
+        <div id="adminDashboard" style="display:none;width:100%;max-width:1600px;margin:0 auto;padding:20px;">
+
+            <!-- الشريط العلوي -->
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 20px;background:linear-gradient(135deg,#12121a,#1a1a2e);border:1px solid rgba(230,57,70,0.15);border-radius:15px;margin-bottom:20px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="width:40px;height:40px;background:rgba(230,57,70,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-shield-alt" style="color:#e63946;font-size:18px;"></i></div>
+                    <div><h1 style="color:#e63946;font-size:20px;margin:0;font-weight:800;">RootZone Admin Panel</h1><p style="color:#555;font-size:10px;margin:0;">لوحة إدارة متقدمة</p></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <button id="adminRefreshBtn" style="padding:8px 14px;background:rgba(33,150,243,0.1);border:1px solid rgba(33,150,243,0.3);color:#2196f3;border-radius:8px;cursor:pointer;font-size:11px;"><i class="fas fa-sync-alt"></i> تحديث</button>
+                    <button id="adminLogoutBtn" style="padding:8px 14px;background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.3);color:#e63946;border-radius:8px;cursor:pointer;font-size:11px;"><i class="fas fa-sign-out-alt"></i> خروج</button>
+                </div>
             </div>
 
-            <!-- إحصائيات سريعة -->
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:25px;">
-                <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:18px;text-align:center;">
-                    <i class="fas fa-users" style="font-size:24px;color:var(--red-primary);"></i>
-                    <p style="color:var(--gray-500);font-size:11px;margin:5px 0 0;">إجمالي المستخدمين</p>
-                    <p id="statTotalUsers" style="color:var(--gray-100);font-size:24px;font-weight:700;margin:0;">-</p>
+            <!-- الإحصائيات -->
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;">
+                <div style="background:linear-gradient(135deg,#1a1025,#12121a);border:1px solid rgba(230,57,70,0.15);border-radius:14px;padding:20px;text-align:center;">
+                    <i class="fas fa-users" style="font-size:28px;color:#e63946;"></i>
+                    <p style="color:#666;font-size:10px;margin:8px 0 2px;text-transform:uppercase;letter-spacing:1px;">المستخدمين</p>
+                    <p id="statTotalUsers" style="color:#f1f1f1;font-size:32px;font-weight:800;margin:0;">0</p>
                 </div>
-                <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:18px;text-align:center;">
-                    <i class="fas fa-circle" style="font-size:24px;color:#4caf50;"></i>
-                    <p style="color:var(--gray-500);font-size:11px;margin:5px 0 0;">أونلاين الآن</p>
-                    <p id="statOnline" style="color:#4caf50;font-size:24px;font-weight:700;margin:0;">-</p>
+                <div style="background:linear-gradient(135deg,#102520,#12121a);border:1px solid rgba(76,175,80,0.15);border-radius:14px;padding:20px;text-align:center;">
+                    <i class="fas fa-circle" style="font-size:28px;color:#4caf50;"></i>
+                    <p style="color:#666;font-size:10px;margin:8px 0 2px;text-transform:uppercase;letter-spacing:1px;">أونلاين</p>
+                    <p id="statOnline" style="color:#4caf50;font-size:32px;font-weight:800;margin:0;">0</p>
                 </div>
-                <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:18px;text-align:center;">
-                    <i class="fas fa-eye" style="font-size:24px;color:#2196f3;"></i>
-                    <p style="color:var(--gray-500);font-size:11px;margin:5px 0 0;">إجمالي الزيارات</p>
-                    <p id="statVisitors" style="color:var(--gray-100);font-size:24px;font-weight:700;margin:0;">-</p>
+                <div style="background:linear-gradient(135deg,#101a25,#12121a);border:1px solid rgba(33,150,243,0.15);border-radius:14px;padding:20px;text-align:center;">
+                    <i class="fas fa-eye" style="font-size:28px;color:#2196f3;"></i>
+                    <p style="color:#666;font-size:10px;margin:8px 0 2px;text-transform:uppercase;letter-spacing:1px;">الزيارات</p>
+                    <p id="statVisitors" style="color:#f1f1f1;font-size:32px;font-weight:800;margin:0;">0</p>
                 </div>
-                <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:18px;text-align:center;">
-                    <i class="fas fa-shopping-bag" style="font-size:24px;color:#ff9800;"></i>
-                    <p style="color:var(--gray-500);font-size:11px;margin:5px 0 0;">إجمالي الطلبات</p>
-                    <p id="statOrders" style="color:var(--gray-100);font-size:24px;font-weight:700;margin:0;">-</p>
+                <div style="background:linear-gradient(135deg,#1a1510,#12121a);border:1px solid rgba(255,152,0,0.15);border-radius:14px;padding:20px;text-align:center;">
+                    <i class="fas fa-shopping-cart" style="font-size:28px;color:#ff9800;"></i>
+                    <p style="color:#666;font-size:10px;margin:8px 0 2px;text-transform:uppercase;letter-spacing:1px;">الطلبات</p>
+                    <p id="statOrders" style="color:#f1f1f1;font-size:32px;font-weight:800;margin:0;">0</p>
+                </div>
+                <div style="background:linear-gradient(135deg,#1a1020,#12121a);border:1px solid rgba(156,39,176,0.15);border-radius:14px;padding:20px;text-align:center;">
+                    <i class="fas fa-fingerprint" style="font-size:28px;color:#9c27b0;"></i>
+                    <p style="color:#666;font-size:10px;margin:8px 0 2px;text-transform:uppercase;letter-spacing:1px;">بصمات فريدة</p>
+                    <p id="statFingerprints" style="color:#f1f1f1;font-size:32px;font-weight:800;margin:0;">0</p>
                 </div>
             </div>
 
             <!-- التبويبات -->
-            <div style="display:flex;gap:5px;margin-bottom:15px;flex-wrap:wrap;">
-                <button class="admin-tab active" data-tab="users" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border-color);background:var(--red-primary);color:#fff;cursor:pointer;font-size:12px;font-weight:600;"><i class="fas fa-users"></i> المستخدمين</button>
-                <button class="admin-tab" data-tab="visitors" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-card);color:var(--gray-400);cursor:pointer;font-size:12px;"><i class="fas fa-eye"></i> الزوار</button>
-                <button class="admin-tab" data-tab="orders" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-card);color:var(--gray-400);cursor:pointer;font-size:12px;"><i class="fas fa-shopping-bag"></i> الطلبات</button>
-                <button class="admin-tab" data-tab="fingerprints" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-card);color:var(--gray-400);cursor:pointer;font-size:12px;"><i class="fas fa-fingerprint"></i> كشف المكررين</button>
+            <div style="display:flex;gap:6px;margin-bottom:15px;flex-wrap:wrap;">
+                <button class="admin-tab active" data-tab="users" style="padding:10px 20px;border-radius:10px;border:1px solid rgba(230,57,70,0.3);background:linear-gradient(135deg,#e63946,#c62828);color:#fff;cursor:pointer;font-size:13px;font-weight:700;transition:all 0.3s;"><i class="fas fa-users"></i> المستخدمين</button>
+                <button class="admin-tab" data-tab="visitors" style="padding:10px 20px;border-radius:10px;border:1px solid #2a2a3a;background:#12121a;color:#888;cursor:pointer;font-size:13px;transition:all 0.3s;"><i class="fas fa-eye"></i> الزوار</button>
+                <button class="admin-tab" data-tab="orders" style="padding:10px 20px;border-radius:10px;border:1px solid #2a2a3a;background:#12121a;color:#888;cursor:pointer;font-size:13px;transition:all 0.3s;"><i class="fas fa-shopping-bag"></i> الطلبات</button>
+                <button class="admin-tab" data-tab="fingerprints" style="padding:10px 20px;border-radius:10px;border:1px solid #2a2a3a;background:#12121a;color:#888;cursor:pointer;font-size:13px;transition:all 0.3s;"><i class="fas fa-fingerprint"></i> كشف المكررين</button>
+                <button class="admin-tab" data-tab="activity" style="padding:10px 20px;border-radius:10px;border:1px solid #2a2a3a;background:#12121a;color:#888;cursor:pointer;font-size:13px;transition:all 0.3s;"><i class="fas fa-history"></i> سجل النشاط</button>
             </div>
 
-            <!-- محتوى التبويبات -->
-            <div id="adminTabContent" style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:20px;min-height:300px;">
-                <div id="adminLoading" style="text-align:center;padding:40px;"><i class="fas fa-spinner fa-spin" style="font-size:30px;color:var(--red-primary);"></i><p style="color:var(--gray-500);margin-top:10px;">جارٍ التحميل...</p></div>
+            <!-- محتوى -->
+            <div id="adminTabContent" style="background:linear-gradient(135deg,#12121a,#1a1a2e);border:1px solid rgba(255,255,255,0.05);border-radius:15px;padding:25px;min-height:400px;">
+                <div id="adminLoading" style="text-align:center;padding:60px;"><i class="fas fa-spinner fa-spin" style="font-size:40px;color:#e63946;"></i><p style="color:#666;margin-top:15px;font-size:14px;">جارٍ تحميل البيانات...</p></div>
                 <div id="adminUsersTab"></div>
                 <div id="adminVisitorsTab" style="display:none;"></div>
                 <div id="adminOrdersTab" style="display:none;"></div>
                 <div id="adminFingerprintsTab" style="display:none;"></div>
+                <div id="adminActivityTab" style="display:none;"></div>
             </div>
         </div>
     </div>
 
     <script>
     (function() {
-        // ==================== إعدادات الأدمن ====================
         var ADMIN_USER = 'rootzone_admin';
         var ADMIN_PASS = 'R00tZ0n3!@#2024';
         var ADMIN_SECRET = 'XkR9$mP2vL7#qW4nZ8jF5bY1cT6gA3hD';
-        var adminLoginAttempts = 0;
-        var adminLocked = false;
+        var adminAttempts = 0, adminLocked = false;
+        var thS = 'padding:10px 8px;text-align:right;color:#aaa;border-bottom:1px solid #1a1a2a;font-size:11px;white-space:nowrap;';
+        var tdS = 'padding:8px;border-bottom:1px solid rgba(255,255,255,0.03);font-size:12px;';
 
-        // فتح صفحة الأدمن عبر URL hash
-        function checkAdminAccess() {
-            if (window.location.hash === '#admin-panel') {
-                document.getElementById('adminOverlay').style.display = 'block';
-            }
-        }
+        function checkAdminAccess() { if (window.location.hash === '#admin-panel') document.getElementById('adminOverlay').style.display = 'block'; }
         window.addEventListener('hashchange', checkAdminAccess);
         checkAdminAccess();
 
-        // تسجيل دخول الأدمن
         document.getElementById('adminLoginBtn').addEventListener('click', function() {
-            if (adminLocked) { document.getElementById('adminLoginError').textContent = 'تم حظرك مؤقتاً. انتظر 5 دقائق'; document.getElementById('adminLoginError').style.display = 'block'; return; }
-            var user = document.getElementById('adminUser').value.trim();
-            var pass = document.getElementById('adminPass').value;
-            var secret = document.getElementById('adminSecret').value;
-            if (user === ADMIN_USER && pass === ADMIN_PASS && secret === ADMIN_SECRET) {
-                adminLoginAttempts = 0;
+            if (adminLocked) { document.getElementById('adminLoginError').textContent = 'تم حظرك! انتظر 5 دقائق'; document.getElementById('adminLoginError').style.display = 'block'; return; }
+            var u = document.getElementById('adminUser').value.trim(), p = document.getElementById('adminPass').value, s = document.getElementById('adminSecret').value;
+            if (u === ADMIN_USER && p === ADMIN_PASS && s === ADMIN_SECRET) {
+                adminAttempts = 0;
                 document.getElementById('adminLoginBox').style.display = 'none';
                 document.getElementById('adminDashboard').style.display = 'block';
                 loadAdminData();
             } else {
-                adminLoginAttempts++;
-                if (adminLoginAttempts >= 3) {
-                    adminLocked = true;
-                    document.getElementById('adminLoginError').textContent = 'تم حظرك! 3 محاولات فاشلة. انتظر 5 دقائق';
-                    document.getElementById('adminLoginError').style.display = 'block';
-                    setTimeout(function() { adminLocked = false; adminLoginAttempts = 0; document.getElementById('adminLoginError').style.display = 'none'; }, 300000);
-                } else {
-                    document.getElementById('adminLoginError').textContent = 'بيانات الدخول خاطئة! محاولة ' + adminLoginAttempts + ' من 3';
-                    document.getElementById('adminLoginError').style.display = 'block';
-                }
+                adminAttempts++;
+                if (adminAttempts >= 3) { adminLocked = true; document.getElementById('adminLoginError').textContent = 'حظر! 3 محاولات فاشلة. انتظر 5 دقائق'; document.getElementById('adminLoginError').style.display = 'block'; setTimeout(function() { adminLocked = false; adminAttempts = 0; document.getElementById('adminLoginError').style.display = 'none'; }, 300000); }
+                else { document.getElementById('adminLoginError').textContent = 'بيانات خاطئة! (' + adminAttempts + '/3)'; document.getElementById('adminLoginError').style.display = 'block'; }
             }
         });
 
         document.getElementById('adminLogoutBtn').addEventListener('click', function() {
-            document.getElementById('adminDashboard').style.display = 'none';
-            document.getElementById('adminLoginBox').style.display = 'block';
-            document.getElementById('adminUser').value = '';
-            document.getElementById('adminPass').value = '';
-            document.getElementById('adminSecret').value = '';
-            window.location.hash = '';
-            document.getElementById('adminOverlay').style.display = 'none';
+            document.getElementById('adminDashboard').style.display = 'none'; document.getElementById('adminLoginBox').style.display = 'block';
+            document.getElementById('adminUser').value = ''; document.getElementById('adminPass').value = ''; document.getElementById('adminSecret').value = '';
+            window.location.hash = ''; document.getElementById('adminOverlay').style.display = 'none';
         });
 
-        // تبويبات الأدمن
+        document.getElementById('adminRefreshBtn').addEventListener('click', function() { loadAdminData(); });
+
         document.querySelectorAll('.admin-tab').forEach(function(tab) {
             tab.addEventListener('click', function() {
-                document.querySelectorAll('.admin-tab').forEach(function(t) { t.style.background = 'var(--bg-card)'; t.style.color = 'var(--gray-400)'; t.classList.remove('active'); });
-                this.style.background = 'var(--red-primary)'; this.style.color = '#fff'; this.classList.add('active');
+                document.querySelectorAll('.admin-tab').forEach(function(t) { t.style.background = '#12121a'; t.style.color = '#888'; t.style.borderColor = '#2a2a3a'; });
+                this.style.background = 'linear-gradient(135deg,#e63946,#c62828)'; this.style.color = '#fff'; this.style.borderColor = 'rgba(230,57,70,0.3)';
                 var target = this.getAttribute('data-tab');
-                document.getElementById('adminUsersTab').style.display = target === 'users' ? 'block' : 'none';
-                document.getElementById('adminVisitorsTab').style.display = target === 'visitors' ? 'block' : 'none';
-                document.getElementById('adminOrdersTab').style.display = target === 'orders' ? 'block' : 'none';
-                document.getElementById('adminFingerprintsTab').style.display = target === 'fingerprints' ? 'block' : 'none';
+                ['users','visitors','orders','fingerprints','activity'].forEach(function(t) {
+                    var el = document.getElementById('admin' + t.charAt(0).toUpperCase() + t.slice(1) + 'Tab');
+                    if (el) el.style.display = t === target ? 'block' : 'none';
+                });
             });
         });
 
-        // تحميل بيانات الأدمن
         async function loadAdminData() {
             document.getElementById('adminLoading').style.display = 'block';
             var adb = firebase.firestore();
+            var users = [], visitors = [], totalOrders = 0, onlineCount = 0;
 
-            // تحميل المستخدمين
-            var usersSnap = await adb.collection('users').get();
-            var users = [];
-            var onlineCount = 0;
-            usersSnap.forEach(function(doc) {
-                var d = doc.data(); d.uid = doc.id; users.push(d);
-                var fiveMinAgo = new Date(Date.now() - 120000);
-                if (d.isOnline && d.lastActive && d.lastActive.toDate && d.lastActive.toDate() > fiveMinAgo) onlineCount++;
+            // ========== المستخدمين ==========
+            try {
+                var usersSnap = await adb.collection('users').get();
+                usersSnap.forEach(function(doc) { var d = doc.data(); d.uid = doc.id; users.push(d); });
+            } catch(e) { console.warn('Users read error:', e); }
+
+            users.sort(function(a, b) {
+                var aT = a.lastActive && a.lastActive.toDate ? a.lastActive.toDate().getTime() : 0;
+                var bT = b.lastActive && b.lastActive.toDate ? b.lastActive.toDate().getTime() : 0;
+                return bT - aT;
             });
+
+            var uh = '<h3 style="color:#e63946;margin:0 0 15px;font-size:16px;"><i class="fas fa-users"></i> جميع المستخدمين المسجلين (' + users.length + ')</h3>';
+            if (users.length === 0) { uh += '<div style="text-align:center;padding:40px;color:#555;"><i class="fas fa-user-slash" style="font-size:40px;display:block;margin-bottom:10px;"></i>لا يوجد مستخدمين مسجلين بعد<br><small>أو قواعد Firestore لا تسمح بالقراءة - تأكد من تحديث القواعد</small></div>'; }
+            else {
+                users.forEach(function(u, idx) {
+                    var twoMinAgo = new Date(Date.now() - 120000);
+                    var isOn = u.isOnline && u.lastActive && u.lastActive.toDate && u.lastActive.toDate() > twoMinAgo;
+                    if (isOn) onlineCount++;
+                    var lastA = u.lastActive && u.lastActive.toDate ? u.lastActive.toDate().toLocaleString('ar-EG') : 'لم يدخل بعد';
+                    var created = u.createdAt && u.createdAt.toDate ? u.createdAt.toDate().toLocaleString('ar-EG') : '-';
+                    var statusDot = isOn ? '<span style="display:inline-block;width:10px;height:10px;background:#4caf50;border-radius:50%;box-shadow:0 0 8px #4caf50;"></span> <span style="color:#4caf50;font-weight:700;">أونلاين</span>' : '<span style="display:inline-block;width:10px;height:10px;background:#555;border-radius:50%;"></span> <span style="color:#666;">أوفلاين</span>';
+                    var vBadge = u.phoneVerified ? '<span style="background:rgba(76,175,80,0.15);color:#4caf50;padding:2px 8px;border-radius:10px;font-size:10px;">مؤكد</span>' : '<span style="background:rgba(230,57,70,0.15);color:#e63946;padding:2px 8px;border-radius:10px;font-size:10px;">غير مؤكد</span>';
+                    uh += '<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:18px;margin-bottom:12px;">';
+                    uh += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">';
+                    uh += '<div style="display:flex;align-items:center;gap:12px;"><div style="width:45px;height:45px;background:rgba(230,57,70,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#e63946;"><i class="fas fa-user"></i></div>';
+                    uh += '<div><p style="margin:0;color:#eee;font-weight:700;font-size:15px;">' + (u.fullName || 'بدون اسم') + ' <span style="color:#555;font-weight:400;font-size:11px;">@' + (u.username || '-') + '</span></p>';
+                    uh += '<p style="margin:2px 0 0;color:#666;font-size:11px;">' + statusDot + ' &nbsp; ' + vBadge + '</p></div></div>';
+                    uh += '<div style="text-align:left;font-size:11px;color:#555;">#' + (idx + 1) + '</div></div>';
+                    uh += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.05);">';
+                    uh += '<div><span style="color:#666;font-size:10px;display:block;">البريد</span><span style="color:#bbb;font-size:12px;direction:ltr;display:inline-block;">' + (u.email || '-') + '</span></div>';
+                    uh += '<div><span style="color:#666;font-size:10px;display:block;">الهاتف</span><span style="color:#bbb;font-size:12px;direction:ltr;display:inline-block;">' + (u.phone || u.phoneNumber || '-') + '</span></div>';
+                    uh += '<div><span style="color:#666;font-size:10px;display:block;">بصمة الجهاز</span><span style="color:#9c27b0;font-size:10px;font-family:monospace;">' + (u.fingerprint || '-') + '</span></div>';
+                    uh += '<div><span style="color:#666;font-size:10px;display:block;">آخر نشاط</span><span style="color:#bbb;font-size:11px;">' + lastA + '</span></div>';
+                    uh += '<div><span style="color:#666;font-size:10px;display:block;">تاريخ الإنشاء</span><span style="color:#bbb;font-size:11px;">' + created + '</span></div>';
+                    uh += '<div><span style="color:#666;font-size:10px;display:block;">UID</span><span style="color:#555;font-size:9px;font-family:monospace;">' + (u.uid || '-') + '</span></div>';
+                    uh += '</div></div>';
+                });
+            }
+            document.getElementById('adminUsersTab').innerHTML = uh;
             document.getElementById('statTotalUsers').textContent = users.length;
             document.getElementById('statOnline').textContent = onlineCount;
 
-            // ترتيب حسب آخر نشاط
-            users.sort(function(a, b) {
-                var aTime = a.lastActive && a.lastActive.toDate ? a.lastActive.toDate().getTime() : 0;
-                var bTime = b.lastActive && b.lastActive.toDate ? b.lastActive.toDate().getTime() : 0;
-                return bTime - aTime;
-            });
+            // ========== الزوار ==========
+            try {
+                var visitorsSnap = await adb.collection('visitors').orderBy('visitedAt', 'desc').limit(200).get();
+                visitorsSnap.forEach(function(doc) { visitors.push(doc.data()); });
+            } catch(e) { console.warn('Visitors read error:', e); }
 
-            var usersHtml = '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
-            usersHtml += '<tr style="background:rgba(230,57,70,0.1);"><th style="padding:10px;text-align:right;color:var(--gray-300);border-bottom:1px solid var(--border-color);">الحالة</th><th style="padding:10px;text-align:right;color:var(--gray-300);border-bottom:1px solid var(--border-color);">الاسم</th><th style="padding:10px;text-align:right;color:var(--gray-300);border-bottom:1px solid var(--border-color);">المستخدم</th><th style="padding:10px;text-align:right;color:var(--gray-300);border-bottom:1px solid var(--border-color);">الإيميل</th><th style="padding:10px;text-align:right;color:var(--gray-300);border-bottom:1px solid var(--border-color);">الهاتف</th><th style="padding:10px;text-align:right;color:var(--gray-300);border-bottom:1px solid var(--border-color);">التأكيد</th><th style="padding:10px;text-align:right;color:var(--gray-300);border-bottom:1px solid var(--border-color);">آخر نشاط</th><th style="padding:10px;text-align:right;color:var(--gray-300);border-bottom:1px solid var(--border-color);">تاريخ الإنشاء</th></tr>';
-            users.forEach(function(u) {
-                var fiveMinAgo = new Date(Date.now() - 120000);
-                var isOnline = u.isOnline && u.lastActive && u.lastActive.toDate && u.lastActive.toDate() > fiveMinAgo;
-                var status = isOnline ? '<span style="color:#4caf50;font-weight:700;">● أونلاين</span>' : '<span style="color:var(--gray-600);">○ أوفلاين</span>';
-                var lastActive = u.lastActive && u.lastActive.toDate ? u.lastActive.toDate().toLocaleString('ar-EG') : '-';
-                var created = u.createdAt && u.createdAt.toDate ? u.createdAt.toDate().toLocaleString('ar-EG') : '-';
-                var verified = u.phoneVerified ? '<span style="color:#4caf50;">مؤكد ✓</span>' : '<span style="color:#e63946;">غير مؤكد</span>';
-                usersHtml += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
-                usersHtml += '<td style="padding:8px;color:var(--gray-300);">' + status + '</td>';
-                usersHtml += '<td style="padding:8px;color:var(--gray-300);">' + (u.fullName || '-') + '</td>';
-                usersHtml += '<td style="padding:8px;color:var(--gray-400);">' + (u.username || '-') + '</td>';
-                usersHtml += '<td style="padding:8px;color:var(--gray-400);direction:ltr;">' + (u.email || '-') + '</td>';
-                usersHtml += '<td style="padding:8px;color:var(--gray-400);direction:ltr;">' + (u.phone || u.phoneNumber || '-') + '</td>';
-                usersHtml += '<td style="padding:8px;">' + verified + '</td>';
-                usersHtml += '<td style="padding:8px;color:var(--gray-500);font-size:11px;">' + lastActive + '</td>';
-                usersHtml += '<td style="padding:8px;color:var(--gray-500);font-size:11px;">' + created + '</td>';
-                usersHtml += '</tr>';
-            });
-            usersHtml += '</table></div>';
-            document.getElementById('adminUsersTab').innerHTML = usersHtml;
+            document.getElementById('statVisitors').textContent = visitors.length;
 
-            // تحميل الزوار
-            var visitorsSnap = await adb.collection('visitors').orderBy('visitedAt', 'desc').limit(100).get();
-            var visitors = [];
-            visitorsSnap.forEach(function(doc) { visitors.push(doc.data()); });
-            document.getElementById('statVisitors').textContent = visitors.length + '+';
-
-            var visitorsHtml = '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;">';
-            visitorsHtml += '<tr style="background:rgba(33,150,243,0.1);"><th style="padding:8px;text-align:right;color:var(--gray-300);border-bottom:1px solid var(--border-color);">IP</th><th style="padding:8px;text-align:right;color:var(--gray-300);border-bottom:1px solid var(--border-color);">البصمة</th><th style="padding:8px;text-align:right;color:var(--gray-300);border-bottom:1px solid var(--border-color);">الجهاز</th><th style="padding:8px;text-align:right;color:var(--gray-300);border-bottom:1px solid var(--border-color);">النظام</th><th style="padding:8px;text-align:right;color:var(--gray-300);border-bottom:1px solid var(--border-color);">المتصفح</th><th style="padding:8px;text-align:right;color:var(--gray-300);border-bottom:1px solid var(--border-color);">الشاشة</th><th style="padding:8px;text-align:right;color:var(--gray-300);border-bottom:1px solid var(--border-color);">اللغة</th><th style="padding:8px;text-align:right;color:var(--gray-300);border-bottom:1px solid var(--border-color);">المعالج</th><th style="padding:8px;text-align:right;color:var(--gray-300);border-bottom:1px solid var(--border-color);">الذاكرة</th><th style="padding:8px;text-align:right;color:var(--gray-300);border-bottom:1px solid var(--border-color);">التاريخ</th></tr>';
-            visitors.forEach(function(v) {
-                var date = v.visitedAt && v.visitedAt.toDate ? v.visitedAt.toDate().toLocaleString('ar-EG') : '-';
-                visitorsHtml += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
-                visitorsHtml += '<td style="padding:6px;color:var(--gray-300);direction:ltr;">' + (v.ip || '-') + '</td>';
-                visitorsHtml += '<td style="padding:6px;color:var(--red-primary);font-family:monospace;font-size:10px;">' + (v.fingerprint || '-') + '</td>';
-                visitorsHtml += '<td style="padding:6px;color:var(--gray-400);">' + (v.device || '-') + '</td>';
-                visitorsHtml += '<td style="padding:6px;color:var(--gray-400);">' + (v.os || '-') + '</td>';
-                visitorsHtml += '<td style="padding:6px;color:var(--gray-400);">' + (v.browser || '-') + '</td>';
-                visitorsHtml += '<td style="padding:6px;color:var(--gray-400);direction:ltr;">' + (v.screen || '-') + '</td>';
-                visitorsHtml += '<td style="padding:6px;color:var(--gray-400);">' + (v.language || '-') + '</td>';
-                visitorsHtml += '<td style="padding:6px;color:var(--gray-400);">' + (v.cores || '-') + ' أنوية</td>';
-                visitorsHtml += '<td style="padding:6px;color:var(--gray-400);">' + (v.memory || '-') + '</td>';
-                visitorsHtml += '<td style="padding:6px;color:var(--gray-500);font-size:10px;">' + date + '</td>';
-                visitorsHtml += '</tr>';
-            });
-            visitorsHtml += '</table></div>';
-            document.getElementById('adminVisitorsTab').innerHTML = visitorsHtml;
-
-            // تحميل الطلبات (من كل المستخدمين)
-            var ordersHtml = '<div style="overflow-x:auto;">';
-            var totalOrders = 0;
-            for (var i = 0; i < users.length; i++) {
-                var u = users[i];
-                var purchasesSnap = await adb.collection('users').doc(u.uid).collection('purchases').orderBy('date', 'desc').get();
-                if (purchasesSnap.size > 0) {
-                    ordersHtml += '<div style="margin-bottom:20px;padding:15px;background:rgba(255,152,0,0.05);border:1px solid rgba(255,152,0,0.2);border-radius:10px;">';
-                    ordersHtml += '<p style="margin:0 0 10px;font-weight:700;color:var(--gray-200);"><i class="fas fa-user" style="color:var(--red-primary);margin-left:5px;"></i>' + (u.fullName || u.email) + ' <span style="color:var(--gray-500);font-weight:400;font-size:11px;">(' + (u.email || '') + ')</span></p>';
-                    ordersHtml += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
-                    ordersHtml += '<tr style="background:rgba(255,152,0,0.1);"><th style="padding:6px;text-align:right;color:var(--gray-300);">المنتج</th><th style="padding:6px;text-align:right;color:var(--gray-300);">السعر</th><th style="padding:6px;text-align:right;color:var(--gray-300);">التاريخ</th></tr>';
-                    purchasesSnap.forEach(function(pDoc) {
-                        totalOrders++;
-                        var p = pDoc.data();
-                        var pDate = p.date && p.date.toDate ? p.date.toDate().toLocaleString('ar-EG') : '-';
-                        ordersHtml += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:6px;color:var(--gray-300);">' + (p.name || '-') + '</td><td style="padding:6px;color:#4caf50;direction:ltr;">' + (p.price || '-') + '</td><td style="padding:6px;color:var(--gray-500);font-size:11px;">' + pDate + '</td></tr>';
-                    });
-                    ordersHtml += '</table></div>';
-                }
+            var vh = '<h3 style="color:#2196f3;margin:0 0 15px;font-size:16px;"><i class="fas fa-eye"></i> سجل الزوار (' + visitors.length + ')</h3>';
+            if (visitors.length === 0) { vh += '<div style="text-align:center;padding:40px;color:#555;"><i class="fas fa-ghost" style="font-size:40px;display:block;margin-bottom:10px;"></i>لا يوجد زوار بعد<br><small>أو قواعد Firestore لا تسمح بقراءة مجموعة visitors</small></div>'; }
+            else {
+                visitors.forEach(function(v, idx) {
+                    var date = v.visitedAt && v.visitedAt.toDate ? v.visitedAt.toDate().toLocaleString('ar-EG') : '-';
+                    vh += '<div style="background:rgba(33,150,243,0.03);border:1px solid rgba(33,150,243,0.08);border-radius:10px;padding:14px;margin-bottom:8px;">';
+                    vh += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+                    vh += '<span style="color:#2196f3;font-weight:700;font-size:13px;"><i class="fas fa-globe"></i> زائر #' + (idx + 1) + '</span>';
+                    vh += '<span style="color:#555;font-size:10px;">' + date + '</span></div>';
+                    vh += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;font-size:11px;">';
+                    vh += '<div><span style="color:#555;">IP:</span> <span style="color:#eee;direction:ltr;display:inline;">' + (v.ip || '-') + '</span></div>';
+                    vh += '<div><span style="color:#555;">البصمة:</span> <span style="color:#9c27b0;font-family:monospace;font-size:10px;">' + (v.fingerprint || '-') + '</span></div>';
+                    vh += '<div><span style="color:#555;">الجهاز:</span> <span style="color:#bbb;">' + (v.device || '-') + '</span></div>';
+                    vh += '<div><span style="color:#555;">النظام:</span> <span style="color:#bbb;">' + (v.os || '-') + '</span></div>';
+                    vh += '<div><span style="color:#555;">المتصفح:</span> <span style="color:#bbb;">' + (v.browser || '-') + '</span></div>';
+                    vh += '<div><span style="color:#555;">الشاشة:</span> <span style="color:#bbb;direction:ltr;display:inline;">' + (v.screen || '-') + '</span></div>';
+                    vh += '<div><span style="color:#555;">اللغة:</span> <span style="color:#bbb;">' + (v.language || '-') + '</span></div>';
+                    vh += '<div><span style="color:#555;">الأنوية:</span> <span style="color:#bbb;">' + (v.cores || '-') + '</span></div>';
+                    vh += '<div><span style="color:#555;">الذاكرة:</span> <span style="color:#bbb;">' + (v.memory || '-') + '</span></div>';
+                    vh += '<div><span style="color:#555;">المنصة:</span> <span style="color:#bbb;">' + (v.platform || '-') + '</span></div>';
+                    vh += '<div><span style="color:#555;">التوقيت:</span> <span style="color:#bbb;">' + (v.timezone || '-') + '</span></div>';
+                    vh += '<div><span style="color:#555;">تاتش:</span> <span style="color:#bbb;">' + (v.touchScreen ? 'نعم' : 'لا') + '</span></div>';
+                    vh += '</div></div>';
+                });
             }
-            if (totalOrders === 0) ordersHtml += '<p style="text-align:center;color:var(--gray-500);padding:30px;">لا توجد طلبات بعد</p>';
-            ordersHtml += '</div>';
-            document.getElementById('adminOrdersTab').innerHTML = ordersHtml;
+            document.getElementById('adminVisitorsTab').innerHTML = vh;
+
+            // ========== الطلبات ==========
+            var oh = '<h3 style="color:#ff9800;margin:0 0 15px;font-size:16px;"><i class="fas fa-shopping-bag"></i> جميع الطلبات</h3>';
+            for (var i = 0; i < users.length; i++) {
+                try {
+                    var pSnap = await adb.collection('users').doc(users[i].uid).collection('purchases').orderBy('date', 'desc').get();
+                    if (pSnap.size > 0) {
+                        oh += '<div style="background:rgba(255,152,0,0.03);border:1px solid rgba(255,152,0,0.1);border-radius:12px;padding:16px;margin-bottom:12px;">';
+                        oh += '<p style="margin:0 0 10px;color:#eee;font-weight:700;font-size:14px;"><i class="fas fa-user" style="color:#ff9800;margin-left:6px;"></i>' + (users[i].fullName || users[i].email) + ' <span style="color:#555;font-weight:400;font-size:11px;">(' + (users[i].email || '') + ' | ' + (users[i].phone || '') + ')</span></p>';
+                        pSnap.forEach(function(pDoc) {
+                            totalOrders++;
+                            var p = pDoc.data();
+                            var pDate = p.date && p.date.toDate ? p.date.toDate().toLocaleString('ar-EG') : '-';
+                            oh += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,0.02);border-radius:8px;margin-bottom:4px;">';
+                            oh += '<div><span style="color:#eee;font-size:13px;">' + (p.name || '-') + '</span></div>';
+                            oh += '<div style="display:flex;gap:15px;align-items:center;"><span style="color:#4caf50;font-weight:700;direction:ltr;">' + (p.price || '-') + '</span><span style="color:#555;font-size:10px;">' + pDate + '</span></div></div>';
+                        });
+                        oh += '</div>';
+                    }
+                } catch(e) {}
+            }
+            if (totalOrders === 0) oh += '<div style="text-align:center;padding:40px;color:#555;"><i class="fas fa-box-open" style="font-size:40px;display:block;margin-bottom:10px;"></i>لا توجد طلبات بعد</div>';
+            document.getElementById('adminOrdersTab').innerHTML = oh;
             document.getElementById('statOrders').textContent = totalOrders;
 
-            // كشف الحسابات المكررة (بصمة الجهاز)
-            var fingerprintMap = {};
+            // ========== كشف المكررين ==========
+            var fpMap = {};
             visitors.forEach(function(v) {
                 if (v.fingerprint) {
-                    if (!fingerprintMap[v.fingerprint]) fingerprintMap[v.fingerprint] = { count: 0, ips: [], visits: [] };
-                    fingerprintMap[v.fingerprint].count++;
-                    if (fingerprintMap[v.fingerprint].ips.indexOf(v.ip) === -1) fingerprintMap[v.fingerprint].ips.push(v.ip);
-                    fingerprintMap[v.fingerprint].visits.push({ ip: v.ip, os: v.os, browser: v.browser, date: v.visitedAt && v.visitedAt.toDate ? v.visitedAt.toDate().toLocaleString('ar-EG') : '-' });
+                    if (!fpMap[v.fingerprint]) fpMap[v.fingerprint] = { count: 0, ips: new Set(), devices: [] };
+                    fpMap[v.fingerprint].count++;
+                    fpMap[v.fingerprint].ips.add(v.ip);
+                    fpMap[v.fingerprint].devices.push({ ip: v.ip, os: v.os, browser: v.browser, date: v.visitedAt && v.visitedAt.toDate ? v.visitedAt.toDate().toLocaleString('ar-EG') : '-' });
                 }
             });
-            var fpHtml = '';
-            var duplicates = Object.keys(fingerprintMap).filter(function(k) { return fingerprintMap[k].count > 1; });
-            if (duplicates.length > 0) {
-                fpHtml += '<p style="color:var(--gray-300);margin-bottom:15px;"><i class="fas fa-exclamation-triangle" style="color:#ff9800;margin-left:5px;"></i> تم اكتشاف <strong style="color:var(--red-primary);">' + duplicates.length + '</strong> بصمة مكررة (نفس الجهاز زار أكثر من مرة)</p>';
-                duplicates.forEach(function(fp) {
-                    var data = fingerprintMap[fp];
-                    fpHtml += '<div style="margin-bottom:12px;padding:12px;background:rgba(255,152,0,0.05);border:1px solid rgba(255,152,0,0.15);border-radius:8px;">';
-                    fpHtml += '<p style="margin:0 0 5px;color:var(--red-primary);font-family:monospace;font-size:12px;"><i class="fas fa-fingerprint"></i> ' + fp + '</p>';
-                    fpHtml += '<p style="margin:0 0 5px;color:var(--gray-400);font-size:11px;">عدد الزيارات: <strong>' + data.count + '</strong> | IPs: <span style="direction:ltr;display:inline;">' + data.ips.join(', ') + '</span></p>';
-                    fpHtml += '</div>';
+            // check users with same fingerprint
+            var userFpMap = {};
+            users.forEach(function(u) { if (u.fingerprint) { if (!userFpMap[u.fingerprint]) userFpMap[u.fingerprint] = []; userFpMap[u.fingerprint].push(u); } });
+            var uniqueFps = Object.keys(fpMap).length;
+            document.getElementById('statFingerprints').textContent = uniqueFps;
+
+            var fh = '<h3 style="color:#9c27b0;margin:0 0 15px;font-size:16px;"><i class="fas fa-fingerprint"></i> كشف الحسابات والزيارات المكررة</h3>';
+            // duplicate user fingerprints
+            var dupUsers = Object.keys(userFpMap).filter(function(k) { return userFpMap[k].length > 1; });
+            if (dupUsers.length > 0) {
+                fh += '<div style="background:rgba(230,57,70,0.05);border:1px solid rgba(230,57,70,0.15);border-radius:12px;padding:16px;margin-bottom:15px;">';
+                fh += '<p style="margin:0 0 10px;color:#e63946;font-weight:700;font-size:14px;"><i class="fas fa-exclamation-triangle"></i> حسابات متعددة من نفس الجهاز!</p>';
+                dupUsers.forEach(function(fp) {
+                    fh += '<div style="margin-bottom:10px;padding:10px;background:rgba(0,0,0,0.2);border-radius:8px;">';
+                    fh += '<p style="margin:0 0 5px;color:#9c27b0;font-family:monospace;font-size:11px;"><i class="fas fa-fingerprint"></i> ' + fp + '</p>';
+                    userFpMap[fp].forEach(function(u) { fh += '<p style="margin:2px 0;color:#bbb;font-size:12px;">• ' + (u.fullName || '-') + ' (@' + (u.username || '-') + ') - ' + (u.email || '') + '</p>'; });
+                    fh += '</div>';
                 });
-            } else {
-                fpHtml = '<p style="text-align:center;color:var(--gray-500);padding:30px;"><i class="fas fa-check-circle" style="color:#4caf50;font-size:30px;display:block;margin-bottom:10px;"></i>لا توجد بصمات مكررة مشبوهة</p>';
+                fh += '</div>';
             }
-            document.getElementById('adminFingerprintsTab').innerHTML = fpHtml;
+            // duplicate visitor fingerprints
+            var dupVisitors = Object.keys(fpMap).filter(function(k) { return fpMap[k].count > 2; });
+            if (dupVisitors.length > 0) {
+                fh += '<p style="color:#ff9800;margin-bottom:10px;font-size:13px;"><i class="fas fa-eye"></i> بصمات زوار مكررة (' + dupVisitors.length + '):</p>';
+                dupVisitors.forEach(function(fp) {
+                    var d = fpMap[fp];
+                    fh += '<div style="background:rgba(255,152,0,0.03);border:1px solid rgba(255,152,0,0.1);border-radius:8px;padding:10px;margin-bottom:6px;">';
+                    fh += '<span style="color:#9c27b0;font-family:monospace;font-size:10px;">' + fp + '</span>';
+                    fh += ' <span style="color:#ff9800;font-size:11px;font-weight:700;">' + d.count + ' زيارة</span>';
+                    fh += ' <span style="color:#555;font-size:10px;">IPs: ' + Array.from(d.ips).join(', ') + '</span></div>';
+                });
+            }
+            if (dupUsers.length === 0 && dupVisitors.length === 0) {
+                fh += '<div style="text-align:center;padding:40px;color:#555;"><i class="fas fa-check-circle" style="font-size:40px;color:#4caf50;display:block;margin-bottom:10px;"></i>لا توجد حسابات أو بصمات مكررة مشبوهة</div>';
+            }
+            document.getElementById('adminFingerprintsTab').innerHTML = fh;
+
+            // ========== سجل النشاط ==========
+            var ah = '<h3 style="color:#00bcd4;margin:0 0 15px;font-size:16px;"><i class="fas fa-history"></i> سجل النشاط الأخير</h3>';
+            var activities = [];
+            users.forEach(function(u) {
+                if (u.createdAt && u.createdAt.toDate) activities.push({ type: 'signup', user: u.fullName || u.email, time: u.createdAt.toDate(), detail: 'إنشاء حساب جديد' });
+                if (u.lastActive && u.lastActive.toDate) activities.push({ type: 'login', user: u.fullName || u.email, time: u.lastActive.toDate(), detail: 'آخر نشاط' });
+            });
+            visitors.forEach(function(v) {
+                if (v.visitedAt && v.visitedAt.toDate) activities.push({ type: 'visit', user: v.ip || 'زائر', time: v.visitedAt.toDate(), detail: (v.device || '') + ' | ' + (v.os || '') + ' | ' + (v.browser || '') });
+            });
+            activities.sort(function(a, b) { return b.time.getTime() - a.time.getTime(); });
+            activities.slice(0, 50).forEach(function(a) {
+                var icon = a.type === 'signup' ? '<i class="fas fa-user-plus" style="color:#4caf50;"></i>' : a.type === 'login' ? '<i class="fas fa-sign-in-alt" style="color:#2196f3;"></i>' : '<i class="fas fa-eye" style="color:#ff9800;"></i>';
+                ah += '<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.03);">';
+                ah += '<div style="width:30px;text-align:center;">' + icon + '</div>';
+                ah += '<div style="flex:1;"><span style="color:#ddd;font-size:12px;font-weight:600;">' + a.user + '</span> <span style="color:#666;font-size:11px;">- ' + a.detail + '</span></div>';
+                ah += '<div style="color:#555;font-size:10px;white-space:nowrap;">' + a.time.toLocaleString('ar-EG') + '</div></div>';
+            });
+            if (activities.length === 0) ah += '<div style="text-align:center;padding:40px;color:#555;">لا يوجد نشاط بعد</div>';
+            document.getElementById('adminActivityTab').innerHTML = ah;
 
             document.getElementById('adminLoading').style.display = 'none';
         }
