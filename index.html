@@ -4733,20 +4733,23 @@
         });
 
         // ==================== تأكيد الهاتف ====================
+        var phoneVerificationId = null;
+
         function openPhoneVerifyPage() {
             document.getElementById('phoneStep1').style.display = 'block';
             document.getElementById('phoneStep2').style.display = 'none';
             hideAuthError('verifyPhoneError');
             document.getElementById('verifyPhonePage').classList.add('active');
             document.body.style.overflow = 'hidden';
-            setupRecaptcha();
+            initRecaptcha();
         }
 
-        function setupRecaptcha() {
-            if (recaptchaVerifier) { try { recaptchaVerifier.clear(); } catch(e) {} }
-            document.getElementById('recaptcha-container').innerHTML = '';
-            recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'normal', callback: () => {} });
-            recaptchaVerifier.render();
+        function initRecaptcha() {
+            if (recaptchaVerifier) return;
+            recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+                size: 'invisible',
+                callback: () => {}
+            });
         }
 
         // إرسال رمز OTP
@@ -4762,23 +4765,29 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ الإرسال...';
             try {
-                confirmationResult = await auth.signInWithPhoneNumber(phoneNumber, recaptchaVerifier);
+                initRecaptcha();
+                var provider = new firebase.auth.PhoneAuthProvider();
+                phoneVerificationId = await provider.verifyPhoneNumber(phoneNumber, recaptchaVerifier);
                 document.getElementById('phoneStep1').style.display = 'none';
                 document.getElementById('phoneStep2').style.display = 'block';
                 document.getElementById('verifyPhoneDisplay').textContent = phoneNumber;
                 showNotification('تم إرسال رمز التحقق (6 أرقام) إلى هاتفك ' + phoneNumber, 'success');
             } catch (error) {
                 console.error('OTP error:', error);
+                if (recaptchaVerifier) { try { recaptchaVerifier.clear(); } catch(e) {} recaptchaVerifier = null; }
                 if (error.code === 'auth/too-many-requests') {
-                    showAuthError('verifyPhoneError', 'محاولات كثيرة! انتظر قليلاً ثم حاول مرة أخرى');
+                    showAuthError('verifyPhoneError', 'محاولات كثيرة! انتظر 5-10 دقائق ثم حاول مرة أخرى');
                 } else if (error.code === 'auth/invalid-phone-number') {
                     showAuthError('verifyPhoneError', 'رقم الهاتف غير صالح. تأكد من كتابته بالشكل الصحيح مع الرمز الدولي (مثال: +972535444886)');
                 } else if (error.code === 'auth/operation-not-allowed') {
-                    showAuthError('verifyPhoneError', 'إرسال SMS غير مفعّل لهذه المنطقة. يجب تفعيل Phone في Firebase Console → Authentication → Sign-in method → Phone ثم تفعيل المنطقة في SMS region policy');
+                    showAuthError('verifyPhoneError', 'إرسال SMS غير مفعّل لهذه المنطقة. يجب تفعيل Phone + SMS region policy في Firebase Console');
+                } else if (error.code === 'auth/captcha-check-failed') {
+                    showAuthError('verifyPhoneError', 'فشل التحقق الأمني. أعد تحميل الصفحة وحاول مرة أخرى');
+                } else if (error.code === 'auth/billing-not-enabled') {
+                    showAuthError('verifyPhoneError', 'يجب تفعيل خطة Blaze في Firebase لإرسال SMS');
                 } else {
                     showAuthError('verifyPhoneError', 'حدث خطأ: ' + (error.message || 'حاول مرة أخرى'));
                 }
-                setupRecaptcha();
             }
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-paper-plane"></i> إرسال رمز التحقق';
@@ -4796,10 +4805,12 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ التحقق...';
             try {
-                const credential = firebase.auth.PhoneAuthProvider.credential(confirmationResult.verificationId, code);
+                const credential = firebase.auth.PhoneAuthProvider.credential(phoneVerificationId, code);
                 const currentUser = auth.currentUser;
                 if (currentUser) {
-                    await currentUser.linkWithCredential(credential);
+                    try { await currentUser.linkWithCredential(credential); } catch(linkErr) {
+                        if (linkErr.code !== 'auth/provider-already-linked' && linkErr.code !== 'auth/credential-already-in-use') throw linkErr;
+                    }
                 } else {
                     await auth.signInWithCredential(credential);
                 }
@@ -4814,18 +4825,9 @@
             } catch (error) {
                 console.error('Verify OTP error:', error);
                 if (error.code === 'auth/invalid-verification-code') {
-                    showAuthError('verifyPhoneError', 'رمز التحقق غير صحيح. حاول مرة أخرى');
-                } else if (error.code === 'auth/credential-already-in-use') {
-                    showAuthError('verifyPhoneError', 'هذا الرقم مرتبط بحساب آخر بالفعل');
-                } else if (error.code === 'auth/provider-already-linked') {
-                    const user = auth.currentUser;
-                    await db.collection('users').doc(user.uid).update({ phoneVerified: true, phoneNumber: document.getElementById('verifyPhoneDisplay').textContent });
-                    phoneVerified = true;
-                    document.getElementById('verifyPhonePage').classList.remove('active');
-                    document.body.style.overflow = '';
-                    showNotification('تم تأكيد رقم الهاتف بنجاح!', 'success');
-                    updateNavUserState(user);
-                    loadCart();
+                    showAuthError('verifyPhoneError', 'رمز التحقق غير صحيح. تأكد من إدخال الرمز الصحيح المرسل لهاتفك');
+                } else if (error.code === 'auth/code-expired') {
+                    showAuthError('verifyPhoneError', 'انتهت صلاحية الرمز. اضغط "إعادة إرسال الرمز" للحصول على رمز جديد');
                 } else {
                     showAuthError('verifyPhoneError', 'حدث خطأ: ' + (error.message || 'حاول مرة أخرى'));
                 }
@@ -4839,7 +4841,7 @@
             document.getElementById('phoneStep1').style.display = 'block';
             document.getElementById('phoneStep2').style.display = 'none';
             document.getElementById('otpCodeInput').value = '';
-            setupRecaptcha();
+            if (recaptchaVerifier) { try { recaptchaVerifier.clear(); } catch(e) {} recaptchaVerifier = null; }
             showNotification('أدخل رقم الهاتف واضغط إرسال مرة أخرى', 'info');
         });
 
@@ -4849,7 +4851,7 @@
             document.getElementById('phoneStep2').style.display = 'none';
             document.getElementById('verifyPhoneNumber').value = '';
             document.getElementById('otpCodeInput').value = '';
-            setupRecaptcha();
+            if (recaptchaVerifier) { try { recaptchaVerifier.clear(); } catch(e) {} recaptchaVerifier = null; }
         });
 
         // إغلاق صفحة تأكيد الهاتف
