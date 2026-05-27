@@ -2866,7 +2866,12 @@
                 <input type="password" id="loginPassword" placeholder="••••••••">
             </div>
             <div id="loginError" style="color:#e63946;font-size:13px;margin-top:8px;display:none;"></div>
+            <div id="loginLockout" style="display:none;background:rgba(230,57,70,0.15);border:1px solid rgba(230,57,70,0.3);border-radius:10px;padding:12px;margin-top:10px;text-align:center;">
+                <i class="fas fa-lock" style="color:var(--red-primary);font-size:20px;"></i>
+                <p style="margin:5px 0 0;font-size:13px;color:var(--gray-300);">حاولت كثيراً! انتظر <span id="lockoutTimer" style="color:var(--red-primary);font-weight:700;">30</span> ثانية</p>
+            </div>
             <button class="button button--cta" id="loginBtn" style="width:100%; margin-top:10px;"><i class="fas fa-sign-in-alt"></i> دخول</button>
+            <p style="margin:8px 0 0;text-align:center;"><span id="forgotPasswordBtn" style="color:var(--red-primary);cursor:pointer;font-size:12px;text-decoration:underline;">نسيت كلمة المرور؟</span></p>
             <p class="auth-switch">ليس لديك حساب؟ <span id="switchToSignup">إنشاء حساب جديد</span></p>
         </div>
     </div>
@@ -2907,24 +2912,34 @@
         </div>
     </div>
 
-    <!-- ==================== صفحة تأكيد الإيميل ==================== -->
-    <div class="login-page" id="verifyEmailPage">
+    <!-- ==================== صفحة تأكيد الهاتف ==================== -->
+    <div class="login-page" id="verifyPhonePage">
         <div class="login-container" style="text-align:center;">
-            <span class="login-close" id="verifyEmailClose">&times;</span>
-            <i class="fas fa-envelope-open-text" style="font-size:60px;color:var(--red-primary);margin-bottom:20px;"></i>
-            <h2>تأكيد البريد الإلكتروني</h2>
-            <p style="margin:15px 0;">تم إرسال رسالة تأكيد إلى بريدك الإلكتروني.<br>يرجى فتح الرسالة والضغط على رابط التأكيد.</p>
-            <div style="background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.2);border-radius:10px;padding:14px;margin:12px 0;text-align:right;">
-                <p style="margin:0 0 8px;font-size:13px;color:var(--gray-300);font-weight:600;"><i class="fas fa-exclamation-triangle" style="color:var(--red-primary);margin-left:5px;"></i> خطوات التأكيد:</p>
-                <p style="margin:0 0 5px;font-size:12px;color:var(--gray-400);">1. الرسالة غالباً تكون في مجلد <strong style="color:var(--red-primary);">Spam (البريد غير المرغوب)</strong> - ادخل إليه</p>
-                <p style="margin:0 0 5px;font-size:12px;color:var(--gray-400);">2. افتح الرسالة واضغط على <strong style="color:var(--red-primary);">Complete Verification</strong></p>
-                <p style="margin:0 0 5px;font-size:12px;color:var(--gray-400);">3. ارجع هنا واضغط <strong style="color:var(--red-primary);">"لقد أكدت الإيميل - تحقق الآن"</strong></p>
-                <p style="margin:0;font-size:11px;color:var(--gray-500);">⏳ قد تستغرق الرسالة من <strong>1 إلى 5 دقائق</strong> للوصول</p>
+            <span class="login-close" id="verifyPhoneClose">&times;</span>
+            <i class="fas fa-mobile-alt" style="font-size:60px;color:var(--red-primary);margin-bottom:20px;"></i>
+            <h2>تأكيد رقم الهاتف</h2>
+            <p style="margin:15px 0;">سنرسل رمز تحقق (OTP) إلى رقم هاتفك للتأكد من هويتك</p>
+            <div id="phoneStep1">
+                <div class="form-group" style="text-align:right;">
+                    <label><i class="fas fa-phone"></i> رقم الهاتف (مع رمز الدولة)</label>
+                    <input type="tel" id="verifyPhoneNumber" placeholder="+972501234567" style="direction:ltr;text-align:left;">
+                </div>
+                <p style="font-size:11px;color:var(--gray-500);margin:5px 0 10px;">مثال: +972 لفلسطين/إسرائيل، +966 للسعودية، +971 للإمارات</p>
+                <div id="recaptcha-container"></div>
+                <button class="button button--cta" id="sendOtpBtn" style="width:100%;margin-top:10px;"><i class="fas fa-paper-plane"></i> إرسال رمز التحقق</button>
             </div>
-            <p id="verifyEmailAddress" style="color:var(--red-primary);font-weight:700;font-size:1.1rem;margin:10px 0;"></p>
-            <button class="button button--cta" id="resendVerifyBtn" style="width:100%;margin-top:15px;"><i class="fas fa-paper-plane"></i> إعادة إرسال رسالة التأكيد</button>
-            <button class="button button--outline" id="checkVerifyBtn" style="width:100%;margin-top:10px;"><i class="fas fa-check-circle"></i> لقد أكدت الإيميل - تحقق الآن</button>
-            <div id="verifyError" style="color:#e63946;font-size:13px;margin-top:8px;display:none;"></div>
+            <div id="phoneStep2" style="display:none;">
+                <p style="color:var(--gray-300);margin:10px 0;">تم إرسال رمز التحقق إلى:</p>
+                <p id="verifyPhoneDisplay" style="color:var(--red-primary);font-weight:700;font-size:1.2rem;direction:ltr;margin:5px 0 15px;"></p>
+                <div class="form-group" style="text-align:right;">
+                    <label><i class="fas fa-key"></i> رمز التحقق (6 أرقام)</label>
+                    <input type="text" id="otpCodeInput" placeholder="123456" maxlength="6" style="direction:ltr;text-align:center;font-size:1.3rem;letter-spacing:8px;">
+                </div>
+                <button class="button button--cta" id="verifyOtpBtn" style="width:100%;margin-top:10px;"><i class="fas fa-check-circle"></i> تأكيد الرمز</button>
+                <button class="button button--outline" id="resendOtpBtn" style="width:100%;margin-top:8px;"><i class="fas fa-redo"></i> إعادة إرسال الرمز</button>
+                <button class="button button--outline" id="changePhoneBtn" style="width:100%;margin-top:8px;"><i class="fas fa-edit"></i> تعديل رقم الهاتف</button>
+            </div>
+            <div id="verifyPhoneError" style="color:#e63946;font-size:13px;margin-top:8px;display:none;"></div>
         </div>
     </div>
 
@@ -3425,7 +3440,7 @@
        ==================================================================== */
         function loadCart() {
             const user = typeof auth !== 'undefined' ? auth.currentUser : null;
-            if (user && user.emailVerified) {
+            if (user && phoneVerified) {
                 db.collection('users').doc(user.uid).collection('cart').doc('items').get().then(doc => {
                     if (doc.exists && doc.data().items) { cart = doc.data().items; } else { cart = []; }
                     updateCartUI(); updateAllAddButtons();
@@ -3437,7 +3452,7 @@
         }
         function saveCart() {
             const user = typeof auth !== 'undefined' ? auth.currentUser : null;
-            if (user && user.emailVerified) {
+            if (user && phoneVerified) {
                 db.collection('users').doc(user.uid).collection('cart').doc('items').set({ items: cart }).catch(err => console.warn('Cart save error:', err));
             }
         }
@@ -3633,10 +3648,9 @@
                 setTimeout(() => { document.getElementById('signupPage').classList.add('active'); document.body.style.overflow = 'hidden'; }, 500);
                 return false;
             }
-            if (!user.emailVerified) {
-                showNotification('يجب تأكيد بريدك الإلكتروني أولاً', 'warning');
-                document.getElementById('verifyEmailAddress').textContent = user.email;
-                setTimeout(() => { document.getElementById('verifyEmailPage').classList.add('active'); document.body.style.overflow = 'hidden'; }, 500);
+            if (!phoneVerified) {
+                showNotification('يجب تأكيد رقم هاتفك أولاً', 'warning');
+                setTimeout(() => { openPhoneVerifyPage(); }, 500);
                 return false;
             }
             return true;
@@ -4209,7 +4223,7 @@
             // Navbar user button opens login or profile
             document.getElementById('navUserBtn').addEventListener('click', () => {
                 const user = typeof auth !== 'undefined' ? auth.currentUser : null;
-                if (user && user.emailVerified) {
+                if (user && phoneVerified) {
                     openProfilePage(user);
                     return;
                 }
@@ -4422,13 +4436,19 @@
         }
 
         let currentUserData = null;
+        var phoneVerified = false;
+        var recaptchaVerifier = null;
+        var confirmationResult = null;
+        var loginAttempts = 0;
+        var loginLocked = false;
+
         function updateNavUserState(user) {
             const navUserBtn = document.getElementById('navUserBtn');
             const navLogoutBtn = document.getElementById('navLogoutBtn');
             const navUserName = document.getElementById('navUserName');
             const navUserDisplay = document.getElementById('navUserDisplay');
             const navUserIcon = document.getElementById('navUserIcon');
-            if (user && user.emailVerified) {
+            if (user && phoneVerified) {
                 db.collection('users').doc(user.uid).get().then(doc => {
                     const data = doc.exists ? doc.data() : {};
                     currentUserData = data;
@@ -4466,8 +4486,8 @@
             } else {
                 document.getElementById('profileCreatedAt').textContent = '-';
             }
-            document.getElementById('profileStatus').textContent = user.emailVerified ? 'مفعّل ✓' : 'غير مفعّل';
-            document.getElementById('profileStatus').style.color = user.emailVerified ? '#4caf50' : '#e63946';
+            document.getElementById('profileStatus').textContent = phoneVerified ? 'مفعّل ✓' : 'غير مفعّل';
+            document.getElementById('profileStatus').style.color = phoneVerified ? '#4caf50' : '#e63946';
             loadPurchaseHistory(user.uid);
             document.getElementById('profilePage').classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -4518,10 +4538,29 @@
 
         // مراقبة حالة تسجيل الدخول
         auth.onAuthStateChanged(user => {
-            updateNavUserState(user);
-            if (user && user.emailVerified) {
-                loadCart();
+            if (user) {
+                db.collection('users').doc(user.uid).get().then(doc => {
+                    if (doc.exists && doc.data().phoneVerified) {
+                        phoneVerified = true;
+                    } else {
+                        phoneVerified = false;
+                    }
+                    updateNavUserState(user);
+                    if (phoneVerified) {
+                        loadCart();
+                    } else {
+                        cart = [];
+                        updateCartUI();
+                        updateAllAddButtons();
+                    }
+                }).catch(() => {
+                    phoneVerified = false;
+                    updateNavUserState(user);
+                    cart = []; updateCartUI(); updateAllAddButtons();
+                });
             } else {
+                phoneVerified = false;
+                updateNavUserState(user);
                 cart = [];
                 updateCartUI();
                 updateAllAddButtons();
@@ -4562,21 +4601,18 @@
                         email: email,
                         phone: phone,
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        emailVerified: false
+                        phoneVerified: false
                     });
                 } catch (firestoreErr) {
                     console.warn('Firestore save warning:', firestoreErr);
                 }
 
-                // إرسال رسالة تأكيد الإيميل
-                await user.sendEmailVerification();
-
-                // إغلاق صفحة إنشاء الحساب وفتح صفحة التأكيد
+                // إغلاق صفحة إنشاء الحساب وفتح صفحة تأكيد الهاتف
                 document.getElementById('signupPage').classList.remove('active');
-                document.getElementById('verifyEmailAddress').textContent = email;
-                document.getElementById('verifyEmailPage').classList.add('active');
+                document.getElementById('verifyPhoneNumber').value = phone.startsWith('+') ? phone : '';
+                openPhoneVerifyPage();
 
-                showNotification('تم إنشاء الحساب! تحقق من بريدك الإلكتروني (أو مجلد Spam)', 'success');
+                showNotification('تم إنشاء الحساب! أكد رقم هاتفك للمتابعة', 'success');
 
                 // مسح الحقول
                 document.getElementById('signupFullName').value = '';
@@ -4594,8 +4630,9 @@
             btn.innerHTML = '<i class="fas fa-user-plus"></i> إنشاء الحساب';
         });
 
-        // تسجيل الدخول
+        // تسجيل الدخول مع حماية من المحاولات الكثيرة
         document.getElementById('loginBtn').addEventListener('click', async () => {
+            if (loginLocked) { showAuthError('loginError', 'انتظر حتى ينتهي العداد'); return; }
             hideAuthError('loginError');
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
@@ -4610,72 +4647,184 @@
             try {
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 const user = userCredential.user;
+                loginAttempts = 0;
 
-                if (!user.emailVerified) {
-                    // الإيميل غير مؤكد - أظهر صفحة التأكيد
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                const isPhoneVerified = userDoc.exists && userDoc.data().phoneVerified;
+
+                if (!isPhoneVerified) {
                     document.getElementById('loginPage').classList.remove('active');
-                    document.getElementById('verifyEmailAddress').textContent = email;
-                    document.getElementById('verifyEmailPage').classList.add('active');
-                    showNotification('يرجى تأكيد بريدك الإلكتروني أولاً (تحقق من Spam إذا لم تجد الرسالة)', 'warning');
+                    openPhoneVerifyPage();
+                    showNotification('يرجى تأكيد رقم هاتفك أولاً', 'warning');
                 } else {
-                    // تسجيل دخول ناجح
+                    phoneVerified = true;
                     document.getElementById('loginPage').classList.remove('active');
                     document.body.style.overflow = '';
                     showNotification('مرحباً بك مجدداً! تم تحميل سلتك ومشترياتك', 'success');
-
-                    // تحديث حالة التأكيد في Firestore
-                    await db.collection('users').doc(user.uid).update({ emailVerified: true });
-
+                    updateNavUserState(user);
+                    loadCart();
                     document.getElementById('loginEmail').value = '';
                     document.getElementById('loginPassword').value = '';
                 }
             } catch (error) {
+                loginAttempts++;
+                if (loginAttempts >= 6) {
+                    loginLocked = true;
+                    btn.disabled = true;
+                    document.getElementById('loginLockout').style.display = 'block';
+                    let seconds = 30;
+                    document.getElementById('lockoutTimer').textContent = seconds;
+                    const lockInterval = setInterval(() => {
+                        seconds--;
+                        document.getElementById('lockoutTimer').textContent = seconds;
+                        if (seconds <= 0) {
+                            clearInterval(lockInterval);
+                            loginLocked = false;
+                            loginAttempts = 0;
+                            btn.disabled = false;
+                            document.getElementById('loginLockout').style.display = 'none';
+                        }
+                    }, 1000);
+                }
                 console.error('Login error:', error.code, error.message);
                 showAuthError('loginError', firebaseErrorMsg(error.code));
             }
-            btn.disabled = false;
+            if (!loginLocked) { btn.disabled = false; }
             btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> دخول';
         });
 
-        // إعادة إرسال رسالة التأكيد
-        document.getElementById('resendVerifyBtn').addEventListener('click', async () => {
-            hideAuthError('verifyError');
-            const user = auth.currentUser;
-            if (user) {
-                try {
-                    await user.sendEmailVerification();
-                    showNotification('تم إعادة إرسال رسالة التأكيد', 'success');
-                } catch (error) {
-                    if (error.code === 'auth/too-many-requests') {
-                        showAuthError('verifyError', 'انتظر قليلاً قبل إعادة الإرسال');
-                    } else {
-                        showAuthError('verifyError', firebaseErrorMsg(error.code));
-                    }
-                }
+        // نسيت كلمة المرور
+        document.getElementById('forgotPasswordBtn').addEventListener('click', async () => {
+            const email = document.getElementById('loginEmail').value.trim();
+            if (!email) { showAuthError('loginError', 'أدخل بريدك الإلكتروني أولاً ثم اضغط "نسيت كلمة المرور"'); return; }
+            try {
+                await auth.sendPasswordResetEmail(email);
+                showNotification('تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني', 'success');
+            } catch (error) {
+                showAuthError('loginError', firebaseErrorMsg(error.code));
             }
         });
 
-        // التحقق من تأكيد الإيميل
-        document.getElementById('checkVerifyBtn').addEventListener('click', async () => {
-            hideAuthError('verifyError');
-            const user = auth.currentUser;
-            if (user) {
-                await user.reload();
-                if (user.emailVerified) {
-                    await db.collection('users').doc(user.uid).update({ emailVerified: true });
-                    document.getElementById('verifyEmailPage').classList.remove('active');
-                    document.body.style.overflow = '';
-                    showNotification('تم تأكيد الإيميل بنجاح! مرحباً بك', 'success');
-                    updateNavUserState(user);
+        // ==================== تأكيد الهاتف ====================
+        function openPhoneVerifyPage() {
+            document.getElementById('phoneStep1').style.display = 'block';
+            document.getElementById('phoneStep2').style.display = 'none';
+            hideAuthError('verifyPhoneError');
+            document.getElementById('verifyPhonePage').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            setupRecaptcha();
+        }
+
+        function setupRecaptcha() {
+            if (recaptchaVerifier) { try { recaptchaVerifier.clear(); } catch(e) {} }
+            document.getElementById('recaptcha-container').innerHTML = '';
+            recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'normal', callback: () => {} });
+            recaptchaVerifier.render();
+        }
+
+        // إرسال رمز OTP
+        document.getElementById('sendOtpBtn').addEventListener('click', async () => {
+            hideAuthError('verifyPhoneError');
+            const phoneNumber = document.getElementById('verifyPhoneNumber').value.trim();
+            if (!phoneNumber || !phoneNumber.startsWith('+')) {
+                showAuthError('verifyPhoneError', 'أدخل رقم الهاتف مع رمز الدولة (مثال: +972501234567)');
+                return;
+            }
+            const btn = document.getElementById('sendOtpBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ الإرسال...';
+            try {
+                confirmationResult = await auth.signInWithPhoneNumber(phoneNumber, recaptchaVerifier);
+                document.getElementById('phoneStep1').style.display = 'none';
+                document.getElementById('phoneStep2').style.display = 'block';
+                document.getElementById('verifyPhoneDisplay').textContent = phoneNumber;
+                showNotification('تم إرسال رمز التحقق إلى هاتفك', 'success');
+            } catch (error) {
+                console.error('OTP error:', error);
+                if (error.code === 'auth/too-many-requests') {
+                    showAuthError('verifyPhoneError', 'محاولات كثيرة! انتظر قليلاً ثم حاول مرة أخرى');
+                } else if (error.code === 'auth/invalid-phone-number') {
+                    showAuthError('verifyPhoneError', 'رقم الهاتف غير صالح. تأكد من إضافة رمز الدولة');
                 } else {
-                    showAuthError('verifyError', 'لم يتم تأكيد الإيميل بعد. تحقق من بريدك الإلكتروني');
+                    showAuthError('verifyPhoneError', 'حدث خطأ: ' + (error.message || 'حاول مرة أخرى'));
                 }
+                setupRecaptcha();
             }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane"></i> إرسال رمز التحقق';
         });
 
-        // إغلاق صفحة التأكيد
-        document.getElementById('verifyEmailClose').addEventListener('click', () => {
-            document.getElementById('verifyEmailPage').classList.remove('active');
+        // تأكيد رمز OTP
+        document.getElementById('verifyOtpBtn').addEventListener('click', async () => {
+            hideAuthError('verifyPhoneError');
+            const code = document.getElementById('otpCodeInput').value.trim();
+            if (!code || code.length !== 6) {
+                showAuthError('verifyPhoneError', 'أدخل رمز التحقق المكون من 6 أرقام');
+                return;
+            }
+            const btn = document.getElementById('verifyOtpBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ التحقق...';
+            try {
+                const credential = firebase.auth.PhoneAuthProvider.credential(confirmationResult.verificationId, code);
+                const currentUser = auth.currentUser;
+                if (currentUser) {
+                    await currentUser.linkWithCredential(credential);
+                } else {
+                    await auth.signInWithCredential(credential);
+                }
+                const user = auth.currentUser;
+                await db.collection('users').doc(user.uid).update({ phoneVerified: true, phoneNumber: document.getElementById('verifyPhoneDisplay').textContent });
+                phoneVerified = true;
+                document.getElementById('verifyPhonePage').classList.remove('active');
+                document.body.style.overflow = '';
+                showNotification('تم تأكيد رقم الهاتف بنجاح! مرحباً بك', 'success');
+                updateNavUserState(user);
+                loadCart();
+            } catch (error) {
+                console.error('Verify OTP error:', error);
+                if (error.code === 'auth/invalid-verification-code') {
+                    showAuthError('verifyPhoneError', 'رمز التحقق غير صحيح. حاول مرة أخرى');
+                } else if (error.code === 'auth/credential-already-in-use') {
+                    showAuthError('verifyPhoneError', 'هذا الرقم مرتبط بحساب آخر بالفعل');
+                } else if (error.code === 'auth/provider-already-linked') {
+                    const user = auth.currentUser;
+                    await db.collection('users').doc(user.uid).update({ phoneVerified: true, phoneNumber: document.getElementById('verifyPhoneDisplay').textContent });
+                    phoneVerified = true;
+                    document.getElementById('verifyPhonePage').classList.remove('active');
+                    document.body.style.overflow = '';
+                    showNotification('تم تأكيد رقم الهاتف بنجاح!', 'success');
+                    updateNavUserState(user);
+                    loadCart();
+                } else {
+                    showAuthError('verifyPhoneError', 'حدث خطأ: ' + (error.message || 'حاول مرة أخرى'));
+                }
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check-circle"></i> تأكيد الرمز';
+        });
+
+        // إعادة إرسال OTP
+        document.getElementById('resendOtpBtn').addEventListener('click', () => {
+            document.getElementById('phoneStep1').style.display = 'block';
+            document.getElementById('phoneStep2').style.display = 'none';
+            document.getElementById('otpCodeInput').value = '';
+            setupRecaptcha();
+            showNotification('أدخل رقم الهاتف واضغط إرسال مرة أخرى', 'info');
+        });
+
+        // تعديل رقم الهاتف
+        document.getElementById('changePhoneBtn').addEventListener('click', () => {
+            document.getElementById('phoneStep1').style.display = 'block';
+            document.getElementById('phoneStep2').style.display = 'none';
+            document.getElementById('verifyPhoneNumber').value = '';
+            document.getElementById('otpCodeInput').value = '';
+            setupRecaptcha();
+        });
+
+        // إغلاق صفحة تأكيد الهاتف
+        document.getElementById('verifyPhoneClose').addEventListener('click', () => {
+            document.getElementById('verifyPhonePage').classList.remove('active');
             document.body.style.overflow = '';
         });
 
@@ -4692,7 +4841,7 @@
         // تعديل زر المستخدم في الشريط: إذا مسجل دخول يفتح الملف الشخصي بدلاً من تسجيل الدخول
         document.getElementById('navUserBtn').addEventListener('click', () => {
             const user = auth.currentUser;
-            if (user && user.emailVerified) {
+            if (user && phoneVerified) {
                 showNotification(`أنت مسجل كـ: ${user.email}`, 'info');
             }
         });
