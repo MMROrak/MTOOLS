@@ -5076,6 +5076,17 @@
                 <div id="adminActivityTab" style="display:none;"></div>
             </div>
         </div>
+
+        <!-- نافذة التفاصيل -->
+        <div id="adminDetailModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:100000;overflow-y:auto;padding:30px;">
+            <div style="max-width:700px;margin:20px auto;background:linear-gradient(135deg,#12121a,#1a1a2e);border:1px solid rgba(230,57,70,0.2);border-radius:16px;padding:0;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <h3 id="detailModalTitle" style="margin:0;color:#e63946;font-size:16px;"></h3>
+                    <button onclick="document.getElementById('adminDetailModal').style.display='none';" style="background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.3);color:#e63946;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;">✕</button>
+                </div>
+                <div id="detailModalBody" style="padding:20px;"></div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -5126,174 +5137,281 @@
             });
         });
 
+        var _adminData = { users: [], visitors: [], orders: [], activities: [] };
+        var detailBtnStyle = 'padding:4px 10px;background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.25);color:#e63946;border-radius:6px;cursor:pointer;font-size:10px;white-space:nowrap;';
+
+        function detailRow(label, value, color) {
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);"><span style="color:#777;font-size:12px;">' + label + '</span><span style="color:' + (color || '#ddd') + ';font-size:12px;direction:ltr;display:inline-block;max-width:400px;word-break:break-all;">' + (value || '-') + '</span></div>';
+        }
+
+        window.showUserDetail = function(idx) {
+            var u = _adminData.users[idx]; if (!u) return;
+            var isOn = u.isOnline && u.lastActive && u.lastActive.toDate && u.lastActive.toDate() > new Date(Date.now() - 120000);
+            var h = detailRow('الاسم الكامل', u.fullName || '-');
+            h += detailRow('اسم المستخدم', '@' + (u.username || '-'));
+            h += detailRow('البريد الإلكتروني', u.email || '-');
+            h += detailRow('رقم الهاتف', u.phone || u.phoneNumber || '-');
+            h += detailRow('الحالة', isOn ? '<span style="color:#4caf50;font-weight:700;">أونلاين</span>' : '<span style="color:#666;">أوفلاين</span>');
+            h += detailRow('تأكيد الهاتف', u.phoneVerified ? '<span style="color:#4caf50;">مؤكد</span>' : '<span style="color:#e63946;">غير مؤكد</span>');
+            h += detailRow('بصمة الجهاز', '<span style="color:#9c27b0;font-family:monospace;">' + (u.fingerprint || '-') + '</span>');
+            h += detailRow('آخر نشاط', u.lastActive && u.lastActive.toDate ? u.lastActive.toDate().toLocaleString('ar-EG') : '-');
+            h += detailRow('تاريخ الإنشاء', u.createdAt && u.createdAt.toDate ? u.createdAt.toDate().toLocaleString('ar-EG') : '-');
+            h += detailRow('UID', '<span style="font-family:monospace;font-size:10px;">' + (u.uid || '-') + '</span>');
+            // show user's orders
+            var userOrders = _adminData.orders.filter(function(o) { return o.userId === u.uid; });
+            if (userOrders.length > 0) {
+                h += '<div style="margin-top:15px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);"><p style="color:#ff9800;font-weight:700;font-size:13px;margin:0 0 8px;"><i class="fas fa-shopping-bag"></i> طلبات هذا المستخدم (' + userOrders.length + ')</p>';
+                userOrders.forEach(function(o) {
+                    h += '<div style="display:flex;justify-content:space-between;padding:6px 10px;background:rgba(255,152,0,0.05);border-radius:6px;margin-bottom:3px;"><span style="color:#ddd;font-size:12px;">' + (o.name || '-') + '</span><span style="color:#4caf50;font-size:12px;font-weight:700;">' + (o.price || '-') + '</span></div>';
+                });
+                h += '</div>';
+            }
+            // show matching visitors by fingerprint
+            if (u.fingerprint) {
+                var matchVisits = _adminData.visitors.filter(function(v) { return v.fingerprint === u.fingerprint; });
+                if (matchVisits.length > 0) {
+                    h += '<div style="margin-top:15px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);"><p style="color:#2196f3;font-weight:700;font-size:13px;margin:0 0 8px;"><i class="fas fa-eye"></i> زيارات بنفس البصمة (' + matchVisits.length + ')</p>';
+                    matchVisits.slice(0, 10).forEach(function(v) {
+                        h += '<div style="font-size:11px;color:#888;padding:3px 0;">' + (v.ip || '-') + ' | ' + (v.os || '-') + ' | ' + (v.browser || '-') + ' | ' + (v.visitedAt && v.visitedAt.toDate ? v.visitedAt.toDate().toLocaleString('ar-EG') : '-') + '</div>';
+                    });
+                    h += '</div>';
+            }   }
+            document.getElementById('detailModalTitle').innerHTML = '<i class="fas fa-user"></i> تفاصيل المستخدم: ' + (u.fullName || u.email);
+            document.getElementById('detailModalBody').innerHTML = h;
+            document.getElementById('adminDetailModal').style.display = 'block';
+        };
+
+        window.showVisitorDetail = function(idx) {
+            var v = _adminData.visitors[idx]; if (!v) return;
+            var h = detailRow('عنوان IP', v.ip || '-', '#ff9800');
+            h += detailRow('بصمة الجهاز', '<span style="color:#9c27b0;font-family:monospace;">' + (v.fingerprint || '-') + '</span>');
+            h += detailRow('نوع الجهاز', v.device || '-');
+            h += detailRow('نظام التشغيل', v.os || '-');
+            h += detailRow('المتصفح', v.browser || '-');
+            h += detailRow('دقة الشاشة', v.screen || '-');
+            h += detailRow('عمق الألوان', v.colorDepth || '-');
+            h += detailRow('اللغة', v.language || '-');
+            h += detailRow('المنطقة الزمنية', v.timezone || '-');
+            h += detailRow('أنوية المعالج', v.cores || '-');
+            h += detailRow('الذاكرة', v.memory || '-');
+            h += detailRow('المنصة', v.platform || '-');
+            h += detailRow('الكوكيز', v.cookiesEnabled ? 'مفعّلة' : 'معطّلة');
+            h += detailRow('شاشة لمس', v.touchScreen ? 'نعم' : 'لا');
+            h += detailRow('مسجل دخول', v.isLoggedIn ? 'نعم' : 'لا');
+            h += detailRow('UID المستخدم', v.userId || 'زائر غير مسجل');
+            h += detailRow('الصفحة', v.page || '-');
+            h += detailRow('تاريخ الزيارة', v.visitedAt && v.visitedAt.toDate ? v.visitedAt.toDate().toLocaleString('ar-EG') : '-');
+            h += detailRow('User Agent', '<span style="font-size:9px;word-break:break-all;">' + (v.userAgent || '-') + '</span>');
+            // find matching users
+            var matchUsers = _adminData.users.filter(function(u) { return u.fingerprint && u.fingerprint === v.fingerprint; });
+            if (matchUsers.length > 0) {
+                h += '<div style="margin-top:15px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);"><p style="color:#e63946;font-weight:700;font-size:13px;margin:0 0 8px;"><i class="fas fa-user"></i> حسابات بنفس البصمة (' + matchUsers.length + ')</p>';
+                matchUsers.forEach(function(u) { h += '<div style="font-size:11px;color:#bbb;padding:3px 0;">' + (u.fullName || '-') + ' (@' + (u.username || '-') + ') - ' + (u.email || '') + '</div>'; });
+                h += '</div>';
+            }
+            document.getElementById('detailModalTitle').innerHTML = '<i class="fas fa-eye"></i> تفاصيل الزائر #' + (idx + 1);
+            document.getElementById('detailModalBody').innerHTML = h;
+            document.getElementById('adminDetailModal').style.display = 'block';
+        };
+
+        window.showOrderDetail = function(orderIdx) {
+            var o = _adminData.orders[orderIdx]; if (!o) return;
+            var h = detailRow('المنتج', o.name || '-', '#ff9800');
+            h += detailRow('السعر', o.price || '-', '#4caf50');
+            h += detailRow('تاريخ الطلب', o.dateStr || '-');
+            h += detailRow('اسم الطالب', o.userName || '-');
+            h += detailRow('بريد الطالب', o.userEmail || '-');
+            h += detailRow('هاتف الطالب', o.userPhone || '-');
+            h += detailRow('UID الطالب', '<span style="font-family:monospace;font-size:10px;">' + (o.userId || '-') + '</span>');
+            h += detailRow('بصمة الجهاز', '<span style="color:#9c27b0;font-family:monospace;">' + (o.userFingerprint || '-') + '</span>');
+            document.getElementById('detailModalTitle').innerHTML = '<i class="fas fa-shopping-bag"></i> تفاصيل الطلب: ' + (o.name || '-');
+            document.getElementById('detailModalBody').innerHTML = h;
+            document.getElementById('adminDetailModal').style.display = 'block';
+        };
+
+        window.showActivityDetail = function(idx) {
+            var a = _adminData.activities[idx]; if (!a) return;
+            var h = '';
+            if (a.type === 'visit') {
+                var vIdx = a._visitorIdx;
+                if (vIdx !== undefined) { window.showVisitorDetail(vIdx); return; }
+                h = detailRow('النوع', 'زيارة');
+                h += detailRow('IP', a.user);
+                h += detailRow('التفاصيل', a.detail);
+                h += detailRow('التاريخ', a.time.toLocaleString('ar-EG'));
+            } else {
+                var uIdx = a._userIdx;
+                if (uIdx !== undefined) { window.showUserDetail(uIdx); return; }
+                h = detailRow('النوع', a.type === 'signup' ? 'إنشاء حساب' : 'نشاط');
+                h += detailRow('المستخدم', a.user);
+                h += detailRow('التاريخ', a.time.toLocaleString('ar-EG'));
+            }
+            document.getElementById('detailModalTitle').innerHTML = '<i class="fas fa-history"></i> تفاصيل النشاط';
+            document.getElementById('detailModalBody').innerHTML = h;
+            document.getElementById('adminDetailModal').style.display = 'block';
+        };
+
+        window.showFpDetail = function(fp) {
+            var matchUsers = _adminData.users.filter(function(u) { return u.fingerprint === fp; });
+            var matchVisits = _adminData.visitors.filter(function(v) { return v.fingerprint === fp; });
+            var h = detailRow('البصمة', '<span style="color:#9c27b0;font-family:monospace;">' + fp + '</span>');
+            h += detailRow('عدد الزيارات', matchVisits.length);
+            var ips = {}; matchVisits.forEach(function(v) { if (v.ip) ips[v.ip] = true; });
+            h += detailRow('عناوين IP', Object.keys(ips).join(', ') || '-');
+            if (matchUsers.length > 0) {
+                h += '<div style="margin-top:15px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);"><p style="color:#e63946;font-weight:700;font-size:13px;margin:0 0 8px;"><i class="fas fa-user"></i> حسابات مرتبطة (' + matchUsers.length + ')</p>';
+                matchUsers.forEach(function(u) { h += '<div style="font-size:12px;color:#bbb;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.03);">' + (u.fullName || '-') + ' | @' + (u.username || '-') + ' | ' + (u.email || '') + ' | ' + (u.phone || '') + '</div>'; });
+                h += '</div>';
+            }
+            if (matchVisits.length > 0) {
+                h += '<div style="margin-top:15px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);"><p style="color:#2196f3;font-weight:700;font-size:13px;margin:0 0 8px;"><i class="fas fa-eye"></i> سجل الزيارات (' + matchVisits.length + ')</p>';
+                matchVisits.forEach(function(v) { h += '<div style="font-size:11px;color:#888;padding:3px 0;">' + (v.ip || '-') + ' | ' + (v.os || '-') + ' | ' + (v.browser || '-') + ' | ' + (v.visitedAt && v.visitedAt.toDate ? v.visitedAt.toDate().toLocaleString('ar-EG') : '-') + '</div>'; });
+                h += '</div>';
+            }
+            document.getElementById('detailModalTitle').innerHTML = '<i class="fas fa-fingerprint"></i> تفاصيل البصمة';
+            document.getElementById('detailModalBody').innerHTML = h;
+            document.getElementById('adminDetailModal').style.display = 'block';
+        };
+
         async function loadAdminData() {
             document.getElementById('adminLoading').style.display = 'block';
             var adb = firebase.firestore();
-            var users = [], visitors = [], totalOrders = 0, onlineCount = 0;
+            _adminData = { users: [], visitors: [], orders: [], activities: [] };
+            var totalOrders = 0, onlineCount = 0;
 
             // ========== المستخدمين ==========
             var usersError = null, visitorsError = null;
             try {
                 var usersSnap = await adb.collection('users').get();
-                usersSnap.forEach(function(doc) { var d = doc.data(); d.uid = doc.id; users.push(d); });
+                usersSnap.forEach(function(doc) { var d = doc.data(); d.uid = doc.id; _adminData.users.push(d); });
             } catch(e) { usersError = e; console.error('Users read error:', e.code, e.message); }
 
-            users.sort(function(a, b) {
+            _adminData.users.sort(function(a, b) {
                 var aT = a.lastActive && a.lastActive.toDate ? a.lastActive.toDate().getTime() : 0;
                 var bT = b.lastActive && b.lastActive.toDate ? b.lastActive.toDate().getTime() : 0;
                 return bT - aT;
             });
 
-            var uh = '<h3 style="color:#e63946;margin:0 0 15px;font-size:16px;"><i class="fas fa-users"></i> جميع المستخدمين المسجلين (' + users.length + ')</h3>';
+            var uh = '<h3 style="color:#e63946;margin:0 0 15px;font-size:16px;"><i class="fas fa-users"></i> جميع المستخدمين المسجلين (' + _adminData.users.length + ')</h3>';
             if (usersError) {
                 uh += '<div style="text-align:center;padding:30px;background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.2);border-radius:12px;">';
                 uh += '<i class="fas fa-exclamation-triangle" style="font-size:40px;color:#e63946;display:block;margin-bottom:12px;"></i>';
                 uh += '<p style="color:#e63946;font-size:15px;font-weight:700;margin:0 0 8px;">فشل تحميل بيانات المستخدمين!</p>';
                 uh += '<p style="color:#888;font-size:12px;margin:0 0 5px;">خطأ: ' + (usersError.code || usersError.message) + '</p>';
-                uh += '<p style="color:#aaa;font-size:12px;margin:0 0 15px;">يجب تحديث قواعد Firestore في Firebase Console</p>';
-                uh += '<div style="text-align:right;background:#0d0d15;padding:12px;border-radius:8px;font-family:monospace;font-size:11px;color:#4caf50;direction:ltr;overflow-x:auto;">';
-                uh += 'match /users/{userId} {<br>&nbsp;&nbsp;allow read: if request.auth != null;<br>&nbsp;&nbsp;allow write: if request.auth.uid == userId;<br>}';
-                uh += '</div></div>';
+                uh += '<p style="color:#aaa;font-size:12px;">يجب تحديث قواعد Firestore</p></div>';
             }
-            else if (users.length === 0) { uh += '<div style="text-align:center;padding:40px;color:#555;"><i class="fas fa-user-slash" style="font-size:40px;display:block;margin-bottom:10px;"></i>لا يوجد مستخدمين مسجلين بعد</div>'; }
+            else if (_adminData.users.length === 0) { uh += '<div style="text-align:center;padding:40px;color:#555;"><i class="fas fa-user-slash" style="font-size:40px;display:block;margin-bottom:10px;"></i>لا يوجد مستخدمين مسجلين بعد</div>'; }
             else {
-                users.forEach(function(u, idx) {
-                    var twoMinAgo = new Date(Date.now() - 120000);
-                    var isOn = u.isOnline && u.lastActive && u.lastActive.toDate && u.lastActive.toDate() > twoMinAgo;
+                _adminData.users.forEach(function(u, idx) {
+                    var isOn = u.isOnline && u.lastActive && u.lastActive.toDate && u.lastActive.toDate() > new Date(Date.now() - 120000);
                     if (isOn) onlineCount++;
-                    var lastA = u.lastActive && u.lastActive.toDate ? u.lastActive.toDate().toLocaleString('ar-EG') : 'لم يدخل بعد';
-                    var created = u.createdAt && u.createdAt.toDate ? u.createdAt.toDate().toLocaleString('ar-EG') : '-';
-                    var statusDot = isOn ? '<span style="display:inline-block;width:10px;height:10px;background:#4caf50;border-radius:50%;box-shadow:0 0 8px #4caf50;"></span> <span style="color:#4caf50;font-weight:700;">أونلاين</span>' : '<span style="display:inline-block;width:10px;height:10px;background:#555;border-radius:50%;"></span> <span style="color:#666;">أوفلاين</span>';
-                    var vBadge = u.phoneVerified ? '<span style="background:rgba(76,175,80,0.15);color:#4caf50;padding:2px 8px;border-radius:10px;font-size:10px;">مؤكد</span>' : '<span style="background:rgba(230,57,70,0.15);color:#e63946;padding:2px 8px;border-radius:10px;font-size:10px;">غير مؤكد</span>';
-                    uh += '<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:18px;margin-bottom:12px;">';
-                    uh += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">';
-                    uh += '<div style="display:flex;align-items:center;gap:12px;"><div style="width:45px;height:45px;background:rgba(230,57,70,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#e63946;"><i class="fas fa-user"></i></div>';
-                    uh += '<div><p style="margin:0;color:#eee;font-weight:700;font-size:15px;">' + (u.fullName || 'بدون اسم') + ' <span style="color:#555;font-weight:400;font-size:11px;">@' + (u.username || '-') + '</span></p>';
-                    uh += '<p style="margin:2px 0 0;color:#666;font-size:11px;">' + statusDot + ' &nbsp; ' + vBadge + '</p></div></div>';
-                    uh += '<div style="text-align:left;font-size:11px;color:#555;">#' + (idx + 1) + '</div></div>';
-                    uh += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.05);">';
-                    uh += '<div><span style="color:#666;font-size:10px;display:block;">البريد</span><span style="color:#bbb;font-size:12px;direction:ltr;display:inline-block;">' + (u.email || '-') + '</span></div>';
-                    uh += '<div><span style="color:#666;font-size:10px;display:block;">الهاتف</span><span style="color:#bbb;font-size:12px;direction:ltr;display:inline-block;">' + (u.phone || u.phoneNumber || '-') + '</span></div>';
-                    uh += '<div><span style="color:#666;font-size:10px;display:block;">بصمة الجهاز</span><span style="color:#9c27b0;font-size:10px;font-family:monospace;">' + (u.fingerprint || '-') + '</span></div>';
-                    uh += '<div><span style="color:#666;font-size:10px;display:block;">آخر نشاط</span><span style="color:#bbb;font-size:11px;">' + lastA + '</span></div>';
-                    uh += '<div><span style="color:#666;font-size:10px;display:block;">تاريخ الإنشاء</span><span style="color:#bbb;font-size:11px;">' + created + '</span></div>';
-                    uh += '<div><span style="color:#666;font-size:10px;display:block;">UID</span><span style="color:#555;font-size:9px;font-family:monospace;">' + (u.uid || '-') + '</span></div>';
-                    uh += '</div></div>';
+                    var statusDot = isOn ? '<span style="display:inline-block;width:8px;height:8px;background:#4caf50;border-radius:50%;box-shadow:0 0 6px #4caf50;"></span> <span style="color:#4caf50;font-size:11px;">أونلاين</span>' : '<span style="display:inline-block;width:8px;height:8px;background:#555;border-radius:50%;"></span> <span style="color:#666;font-size:11px;">أوفلاين</span>';
+                    uh += '<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">';
+                    uh += '<div style="display:flex;align-items:center;gap:10px;"><div style="width:38px;height:38px;background:rgba(230,57,70,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#e63946;"><i class="fas fa-user"></i></div>';
+                    uh += '<div><p style="margin:0;color:#eee;font-weight:700;font-size:14px;">' + (u.fullName || 'بدون اسم') + ' <span style="color:#555;font-weight:400;font-size:10px;">@' + (u.username || '-') + '</span></p>';
+                    uh += '<p style="margin:2px 0 0;">' + statusDot + '</p></div></div>';
+                    uh += '<button onclick="showUserDetail(' + idx + ')" style="' + detailBtnStyle + '"><i class="fas fa-info-circle"></i> تفاصيل</button></div>';
                 });
             }
             document.getElementById('adminUsersTab').innerHTML = uh;
-            document.getElementById('statTotalUsers').textContent = users.length;
+            document.getElementById('statTotalUsers').textContent = _adminData.users.length;
             document.getElementById('statOnline').textContent = onlineCount;
 
             // ========== الزوار ==========
             try {
                 var visitorsSnap = await adb.collection('visitors').orderBy('visitedAt', 'desc').limit(200).get();
-                visitorsSnap.forEach(function(doc) { visitors.push(doc.data()); });
+                visitorsSnap.forEach(function(doc) { _adminData.visitors.push(doc.data()); });
             } catch(e) { visitorsError = e; console.error('Visitors read error:', e.code, e.message); }
 
-            document.getElementById('statVisitors').textContent = visitors.length;
+            document.getElementById('statVisitors').textContent = _adminData.visitors.length;
 
-            var vh = '<h3 style="color:#2196f3;margin:0 0 15px;font-size:16px;"><i class="fas fa-eye"></i> سجل الزوار (' + visitors.length + ')</h3>';
+            var vh = '<h3 style="color:#2196f3;margin:0 0 15px;font-size:16px;"><i class="fas fa-eye"></i> سجل الزوار (' + _adminData.visitors.length + ')</h3>';
             if (visitorsError) {
                 vh += '<div style="text-align:center;padding:30px;background:rgba(33,150,243,0.08);border:1px solid rgba(33,150,243,0.2);border-radius:12px;">';
                 vh += '<i class="fas fa-exclamation-triangle" style="font-size:40px;color:#2196f3;display:block;margin-bottom:12px;"></i>';
                 vh += '<p style="color:#2196f3;font-size:15px;font-weight:700;margin:0 0 8px;">فشل تحميل بيانات الزوار!</p>';
-                vh += '<p style="color:#888;font-size:12px;margin:0 0 5px;">خطأ: ' + (visitorsError.code || visitorsError.message) + '</p>';
-                vh += '<p style="color:#aaa;font-size:12px;margin:0 0 15px;">يجب تحديث قواعد Firestore - أضف:</p>';
-                vh += '<div style="background:#0d0d15;padding:12px;border-radius:8px;font-family:monospace;font-size:11px;color:#4caf50;direction:ltr;overflow-x:auto;">';
-                vh += 'match /visitors/{doc} {<br>&nbsp;&nbsp;allow create: if true;<br>&nbsp;&nbsp;allow read: if request.auth != null;<br>}';
-                vh += '</div></div>';
+                vh += '<p style="color:#888;font-size:12px;">خطأ: ' + (visitorsError.code || visitorsError.message) + '</p></div>';
             }
-            else if (visitors.length === 0) { vh += '<div style="text-align:center;padding:40px;color:#555;"><i class="fas fa-ghost" style="font-size:40px;display:block;margin-bottom:10px;"></i>لا يوجد زوار بعد</div>'; }
+            else if (_adminData.visitors.length === 0) { vh += '<div style="text-align:center;padding:40px;color:#555;"><i class="fas fa-ghost" style="font-size:40px;display:block;margin-bottom:10px;"></i>لا يوجد زوار بعد</div>'; }
             else {
-                visitors.forEach(function(v, idx) {
+                _adminData.visitors.forEach(function(v, idx) {
                     var date = v.visitedAt && v.visitedAt.toDate ? v.visitedAt.toDate().toLocaleString('ar-EG') : '-';
-                    vh += '<div style="background:rgba(33,150,243,0.03);border:1px solid rgba(33,150,243,0.08);border-radius:10px;padding:14px;margin-bottom:8px;">';
-                    vh += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
-                    vh += '<span style="color:#2196f3;font-weight:700;font-size:13px;"><i class="fas fa-globe"></i> زائر #' + (idx + 1) + '</span>';
-                    vh += '<span style="color:#555;font-size:10px;">' + date + '</span></div>';
-                    vh += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;font-size:11px;">';
-                    vh += '<div><span style="color:#555;">IP:</span> <span style="color:#eee;direction:ltr;display:inline;">' + (v.ip || '-') + '</span></div>';
-                    vh += '<div><span style="color:#555;">البصمة:</span> <span style="color:#9c27b0;font-family:monospace;font-size:10px;">' + (v.fingerprint || '-') + '</span></div>';
-                    vh += '<div><span style="color:#555;">الجهاز:</span> <span style="color:#bbb;">' + (v.device || '-') + '</span></div>';
-                    vh += '<div><span style="color:#555;">النظام:</span> <span style="color:#bbb;">' + (v.os || '-') + '</span></div>';
-                    vh += '<div><span style="color:#555;">المتصفح:</span> <span style="color:#bbb;">' + (v.browser || '-') + '</span></div>';
-                    vh += '<div><span style="color:#555;">الشاشة:</span> <span style="color:#bbb;direction:ltr;display:inline;">' + (v.screen || '-') + '</span></div>';
-                    vh += '<div><span style="color:#555;">اللغة:</span> <span style="color:#bbb;">' + (v.language || '-') + '</span></div>';
-                    vh += '<div><span style="color:#555;">الأنوية:</span> <span style="color:#bbb;">' + (v.cores || '-') + '</span></div>';
-                    vh += '<div><span style="color:#555;">الذاكرة:</span> <span style="color:#bbb;">' + (v.memory || '-') + '</span></div>';
-                    vh += '<div><span style="color:#555;">المنصة:</span> <span style="color:#bbb;">' + (v.platform || '-') + '</span></div>';
-                    vh += '<div><span style="color:#555;">التوقيت:</span> <span style="color:#bbb;">' + (v.timezone || '-') + '</span></div>';
-                    vh += '<div><span style="color:#555;">تاتش:</span> <span style="color:#bbb;">' + (v.touchScreen ? 'نعم' : 'لا') + '</span></div>';
-                    vh += '</div></div>';
+                    vh += '<div style="background:rgba(33,150,243,0.03);border:1px solid rgba(33,150,243,0.08);border-radius:10px;padding:12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">';
+                    vh += '<div style="display:flex;align-items:center;gap:10px;"><div style="width:32px;height:32px;background:rgba(33,150,243,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#2196f3;font-size:14px;"><i class="fas fa-globe"></i></div>';
+                    vh += '<div><p style="margin:0;color:#ddd;font-size:13px;"><span style="color:#eee;direction:ltr;display:inline;">' + (v.ip || '-') + '</span> <span style="color:#555;font-size:10px;">| ' + (v.os || '-') + ' | ' + (v.browser || '-') + '</span></p>';
+                    vh += '<p style="margin:1px 0 0;color:#555;font-size:10px;">' + date + ' | <span style="color:#9c27b0;font-family:monospace;">' + (v.fingerprint || '-') + '</span></p></div></div>';
+                    vh += '<button onclick="showVisitorDetail(' + idx + ')" style="' + detailBtnStyle + '"><i class="fas fa-info-circle"></i> تفاصيل</button></div>';
                 });
             }
             document.getElementById('adminVisitorsTab').innerHTML = vh;
 
             // ========== الطلبات ==========
             var oh = '<h3 style="color:#ff9800;margin:0 0 15px;font-size:16px;"><i class="fas fa-shopping-bag"></i> جميع الطلبات</h3>';
-            for (var i = 0; i < users.length; i++) {
+            for (var i = 0; i < _adminData.users.length; i++) {
                 try {
-                    var pSnap = await adb.collection('users').doc(users[i].uid).collection('purchases').orderBy('date', 'desc').get();
-                    if (pSnap.size > 0) {
-                        oh += '<div style="background:rgba(255,152,0,0.03);border:1px solid rgba(255,152,0,0.1);border-radius:12px;padding:16px;margin-bottom:12px;">';
-                        oh += '<p style="margin:0 0 10px;color:#eee;font-weight:700;font-size:14px;"><i class="fas fa-user" style="color:#ff9800;margin-left:6px;"></i>' + (users[i].fullName || users[i].email) + ' <span style="color:#555;font-weight:400;font-size:11px;">(' + (users[i].email || '') + ' | ' + (users[i].phone || '') + ')</span></p>';
-                        pSnap.forEach(function(pDoc) {
-                            totalOrders++;
-                            var p = pDoc.data();
-                            var pDate = p.date && p.date.toDate ? p.date.toDate().toLocaleString('ar-EG') : '-';
-                            oh += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,0.02);border-radius:8px;margin-bottom:4px;">';
-                            oh += '<div><span style="color:#eee;font-size:13px;">' + (p.name || '-') + '</span></div>';
-                            oh += '<div style="display:flex;gap:15px;align-items:center;"><span style="color:#4caf50;font-weight:700;direction:ltr;">' + (p.price || '-') + '</span><span style="color:#555;font-size:10px;">' + pDate + '</span></div></div>';
+                    var pSnap = await adb.collection('users').doc(_adminData.users[i].uid).collection('purchases').orderBy('date', 'desc').get();
+                    pSnap.forEach(function(pDoc) {
+                        var p = pDoc.data();
+                        totalOrders++;
+                        _adminData.orders.push({
+                            name: p.name, price: p.price,
+                            dateStr: p.date && p.date.toDate ? p.date.toDate().toLocaleString('ar-EG') : '-',
+                            userId: _adminData.users[i].uid,
+                            userName: _adminData.users[i].fullName || _adminData.users[i].email,
+                            userEmail: _adminData.users[i].email || '-',
+                            userPhone: _adminData.users[i].phone || '-',
+                            userFingerprint: _adminData.users[i].fingerprint || '-'
                         });
-                        oh += '</div>';
-                    }
+                    });
                 } catch(e) {}
             }
-            if (totalOrders === 0) oh += '<div style="text-align:center;padding:40px;color:#555;"><i class="fas fa-box-open" style="font-size:40px;display:block;margin-bottom:10px;"></i>لا توجد طلبات بعد</div>';
+            if (totalOrders === 0) { oh += '<div style="text-align:center;padding:40px;color:#555;"><i class="fas fa-box-open" style="font-size:40px;display:block;margin-bottom:10px;"></i>لا توجد طلبات بعد</div>'; }
+            else {
+                _adminData.orders.forEach(function(o, idx) {
+                    oh += '<div style="background:rgba(255,152,0,0.03);border:1px solid rgba(255,152,0,0.08);border-radius:10px;padding:12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">';
+                    oh += '<div><p style="margin:0;color:#eee;font-size:13px;"><i class="fas fa-box" style="color:#ff9800;margin-left:5px;"></i>' + (o.name || '-') + '</p>';
+                    oh += '<p style="margin:2px 0 0;color:#555;font-size:10px;">' + o.userName + ' | ' + o.dateStr + '</p></div>';
+                    oh += '<div style="display:flex;align-items:center;gap:8px;"><span style="color:#4caf50;font-weight:700;font-size:13px;direction:ltr;">' + (o.price || '-') + '</span>';
+                    oh += '<button onclick="showOrderDetail(' + idx + ')" style="' + detailBtnStyle + '"><i class="fas fa-info-circle"></i> تفاصيل</button></div></div>';
+                });
+            }
             document.getElementById('adminOrdersTab').innerHTML = oh;
             document.getElementById('statOrders').textContent = totalOrders;
 
             // ========== كشف المكررين ==========
             var fpMap = {};
-            visitors.forEach(function(v) {
+            _adminData.visitors.forEach(function(v) {
                 if (v.fingerprint) {
-                    if (!fpMap[v.fingerprint]) fpMap[v.fingerprint] = { count: 0, ips: new Set(), devices: [] };
+                    if (!fpMap[v.fingerprint]) fpMap[v.fingerprint] = { count: 0, ips: new Set() };
                     fpMap[v.fingerprint].count++;
                     fpMap[v.fingerprint].ips.add(v.ip);
-                    fpMap[v.fingerprint].devices.push({ ip: v.ip, os: v.os, browser: v.browser, date: v.visitedAt && v.visitedAt.toDate ? v.visitedAt.toDate().toLocaleString('ar-EG') : '-' });
                 }
             });
-            // check users with same fingerprint
             var userFpMap = {};
-            users.forEach(function(u) { if (u.fingerprint) { if (!userFpMap[u.fingerprint]) userFpMap[u.fingerprint] = []; userFpMap[u.fingerprint].push(u); } });
-            var uniqueFps = Object.keys(fpMap).length;
-            document.getElementById('statFingerprints').textContent = uniqueFps;
+            _adminData.users.forEach(function(u) { if (u.fingerprint) { if (!userFpMap[u.fingerprint]) userFpMap[u.fingerprint] = []; userFpMap[u.fingerprint].push(u); } });
+            document.getElementById('statFingerprints').textContent = Object.keys(fpMap).length;
 
             var fh = '<h3 style="color:#9c27b0;margin:0 0 15px;font-size:16px;"><i class="fas fa-fingerprint"></i> كشف الحسابات والزيارات المكررة</h3>';
-            // duplicate user fingerprints
             var dupUsers = Object.keys(userFpMap).filter(function(k) { return userFpMap[k].length > 1; });
             if (dupUsers.length > 0) {
                 fh += '<div style="background:rgba(230,57,70,0.05);border:1px solid rgba(230,57,70,0.15);border-radius:12px;padding:16px;margin-bottom:15px;">';
                 fh += '<p style="margin:0 0 10px;color:#e63946;font-weight:700;font-size:14px;"><i class="fas fa-exclamation-triangle"></i> حسابات متعددة من نفس الجهاز!</p>';
                 dupUsers.forEach(function(fp) {
-                    fh += '<div style="margin-bottom:10px;padding:10px;background:rgba(0,0,0,0.2);border-radius:8px;">';
-                    fh += '<p style="margin:0 0 5px;color:#9c27b0;font-family:monospace;font-size:11px;"><i class="fas fa-fingerprint"></i> ' + fp + '</p>';
-                    userFpMap[fp].forEach(function(u) { fh += '<p style="margin:2px 0;color:#bbb;font-size:12px;">• ' + (u.fullName || '-') + ' (@' + (u.username || '-') + ') - ' + (u.email || '') + '</p>'; });
-                    fh += '</div>';
+                    fh += '<div style="margin-bottom:8px;padding:10px;background:rgba(0,0,0,0.2);border-radius:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">';
+                    fh += '<div><p style="margin:0 0 3px;color:#9c27b0;font-family:monospace;font-size:11px;">' + fp + '</p>';
+                    userFpMap[fp].forEach(function(u) { fh += '<p style="margin:1px 0;color:#bbb;font-size:11px;">• ' + (u.fullName || '-') + ' - ' + (u.email || '') + '</p>'; });
+                    fh += '</div><button onclick="showFpDetail(\'' + fp + '\')" style="' + detailBtnStyle + '"><i class="fas fa-info-circle"></i> تفاصيل</button></div>';
                 });
                 fh += '</div>';
             }
-            // duplicate visitor fingerprints
             var dupVisitors = Object.keys(fpMap).filter(function(k) { return fpMap[k].count > 2; });
             if (dupVisitors.length > 0) {
                 fh += '<p style="color:#ff9800;margin-bottom:10px;font-size:13px;"><i class="fas fa-eye"></i> بصمات زوار مكررة (' + dupVisitors.length + '):</p>';
                 dupVisitors.forEach(function(fp) {
                     var d = fpMap[fp];
-                    fh += '<div style="background:rgba(255,152,0,0.03);border:1px solid rgba(255,152,0,0.1);border-radius:8px;padding:10px;margin-bottom:6px;">';
-                    fh += '<span style="color:#9c27b0;font-family:monospace;font-size:10px;">' + fp + '</span>';
-                    fh += ' <span style="color:#ff9800;font-size:11px;font-weight:700;">' + d.count + ' زيارة</span>';
-                    fh += ' <span style="color:#555;font-size:10px;">IPs: ' + Array.from(d.ips).join(', ') + '</span></div>';
+                    fh += '<div style="background:rgba(255,152,0,0.03);border:1px solid rgba(255,152,0,0.1);border-radius:8px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">';
+                    fh += '<div><span style="color:#9c27b0;font-family:monospace;font-size:10px;">' + fp + '</span> <span style="color:#ff9800;font-size:11px;font-weight:700;">' + d.count + ' زيارة</span> <span style="color:#555;font-size:10px;">IPs: ' + Array.from(d.ips).join(', ') + '</span></div>';
+                    fh += '<button onclick="showFpDetail(\'' + fp + '\')" style="' + detailBtnStyle + '"><i class="fas fa-info-circle"></i> تفاصيل</button></div>';
                 });
             }
             if (dupUsers.length === 0 && dupVisitors.length === 0) {
@@ -5302,24 +5420,25 @@
             document.getElementById('adminFingerprintsTab').innerHTML = fh;
 
             // ========== سجل النشاط ==========
+            _adminData.activities = [];
+            _adminData.users.forEach(function(u, uIdx) {
+                if (u.createdAt && u.createdAt.toDate) _adminData.activities.push({ type: 'signup', user: u.fullName || u.email, time: u.createdAt.toDate(), detail: 'إنشاء حساب جديد', _userIdx: uIdx });
+                if (u.lastActive && u.lastActive.toDate) _adminData.activities.push({ type: 'login', user: u.fullName || u.email, time: u.lastActive.toDate(), detail: 'آخر نشاط', _userIdx: uIdx });
+            });
+            _adminData.visitors.forEach(function(v, vIdx) {
+                if (v.visitedAt && v.visitedAt.toDate) _adminData.activities.push({ type: 'visit', user: v.ip || 'زائر', time: v.visitedAt.toDate(), detail: (v.device || '') + ' | ' + (v.os || '') + ' | ' + (v.browser || ''), _visitorIdx: vIdx });
+            });
+            _adminData.activities.sort(function(a, b) { return b.time.getTime() - a.time.getTime(); });
             var ah = '<h3 style="color:#00bcd4;margin:0 0 15px;font-size:16px;"><i class="fas fa-history"></i> سجل النشاط الأخير</h3>';
-            var activities = [];
-            users.forEach(function(u) {
-                if (u.createdAt && u.createdAt.toDate) activities.push({ type: 'signup', user: u.fullName || u.email, time: u.createdAt.toDate(), detail: 'إنشاء حساب جديد' });
-                if (u.lastActive && u.lastActive.toDate) activities.push({ type: 'login', user: u.fullName || u.email, time: u.lastActive.toDate(), detail: 'آخر نشاط' });
-            });
-            visitors.forEach(function(v) {
-                if (v.visitedAt && v.visitedAt.toDate) activities.push({ type: 'visit', user: v.ip || 'زائر', time: v.visitedAt.toDate(), detail: (v.device || '') + ' | ' + (v.os || '') + ' | ' + (v.browser || '') });
-            });
-            activities.sort(function(a, b) { return b.time.getTime() - a.time.getTime(); });
-            activities.slice(0, 50).forEach(function(a) {
+            _adminData.activities.slice(0, 50).forEach(function(a, idx) {
                 var icon = a.type === 'signup' ? '<i class="fas fa-user-plus" style="color:#4caf50;"></i>' : a.type === 'login' ? '<i class="fas fa-sign-in-alt" style="color:#2196f3;"></i>' : '<i class="fas fa-eye" style="color:#ff9800;"></i>';
-                ah += '<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.03);">';
-                ah += '<div style="width:30px;text-align:center;">' + icon + '</div>';
-                ah += '<div style="flex:1;"><span style="color:#ddd;font-size:12px;font-weight:600;">' + a.user + '</span> <span style="color:#666;font-size:11px;">- ' + a.detail + '</span></div>';
-                ah += '<div style="color:#555;font-size:10px;white-space:nowrap;">' + a.time.toLocaleString('ar-EG') + '</div></div>';
+                ah += '<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.03);">';
+                ah += '<div style="width:24px;text-align:center;">' + icon + '</div>';
+                ah += '<div style="flex:1;"><span style="color:#ddd;font-size:12px;font-weight:600;">' + a.user + '</span> <span style="color:#666;font-size:10px;">- ' + a.detail + '</span></div>';
+                ah += '<div style="color:#555;font-size:10px;white-space:nowrap;">' + a.time.toLocaleString('ar-EG') + '</div>';
+                ah += '<button onclick="showActivityDetail(' + idx + ')" style="' + detailBtnStyle + '"><i class="fas fa-info-circle"></i> تفاصيل</button></div>';
             });
-            if (activities.length === 0) ah += '<div style="text-align:center;padding:40px;color:#555;">لا يوجد نشاط بعد</div>';
+            if (_adminData.activities.length === 0) ah += '<div style="text-align:center;padding:40px;color:#555;">لا يوجد نشاط بعد</div>';
             document.getElementById('adminActivityTab').innerHTML = ah;
 
             document.getElementById('adminLoading').style.display = 'none';
