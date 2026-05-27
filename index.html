@@ -239,6 +239,14 @@
             box-shadow: 0 0 15px rgba(76,175,80,0.2);
             color: #4caf50;
         }
+        .nav-login-text {
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .navbar-user-btn.logged-in .nav-login-text {
+            display: none;
+        }
         /* ==================== صفحة البروفايل ==================== */
         .profile-page {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -383,6 +391,9 @@
             }
             .navbar-user-btn.logged-in .nav-user-display span {
                 display: none;
+            }
+            .nav-login-text {
+                font-size: 10px;
             }
             .profile-container {
                 width: 95%; padding: 20px; max-height: 85vh;
@@ -2834,8 +2845,9 @@
             </ul>
 
             <div class="navbar-actions">
-                <button class="navbar-user-btn" id="navUserBtn" title="تسجيل الدخول">
-                    <i class="fas fa-user" id="navUserIcon"></i>
+                <button class="navbar-user-btn navbar-login-visible" id="navUserBtn" title="تسجيل الدخول">
+                    <i class="fas fa-user-circle" id="navUserIcon"></i>
+                    <span class="nav-login-text" id="navLoginText">تسجيل الدخول</span>
                     <div class="nav-user-display" style="display:none;" id="navUserDisplay">
                         <span id="navUserName"></span>
                     </div>
@@ -2895,8 +2907,9 @@
                 <input type="email" id="signupEmail" placeholder="example@email.com">
             </div>
             <div class="form-group">
-                <label><i class="fas fa-phone"></i> رقم الهاتف</label>
-                <input type="tel" id="signupPhone" placeholder="05xxxxxxxx">
+                <label><i class="fas fa-phone"></i> رقم الهاتف (مع الرمز الدولي مثال: +972)</label>
+                <input type="tel" id="signupPhone" placeholder="+972535444886" style="direction:ltr;text-align:left;">
+                <p style="font-size:10px;color:var(--gray-500);margin:4px 0 0;text-align:right;">ابدأ بالرمز الدولي: +972 فلسطين/إسرائيل، +966 السعودية، +971 الإمارات</p>
             </div>
             <div class="form-group">
                 <label><i class="fas fa-lock"></i> كلمة المرور</label>
@@ -2921,18 +2934,21 @@
             <p style="margin:15px 0;">سنرسل رمز تحقق (OTP) إلى رقم هاتفك للتأكد من هويتك</p>
             <div id="phoneStep1">
                 <div class="form-group" style="text-align:right;">
-                    <label><i class="fas fa-phone"></i> رقم الهاتف (مع رمز الدولة)</label>
-                    <input type="tel" id="verifyPhoneNumber" placeholder="+972501234567" style="direction:ltr;text-align:left;">
+                    <label><i class="fas fa-phone"></i> رقم الهاتف (مع الرمز الدولي مثال: +972)</label>
+                    <input type="tel" id="verifyPhoneNumber" placeholder="+972535444886" style="direction:ltr;text-align:left;">
                 </div>
                 <p style="font-size:11px;color:var(--gray-500);margin:5px 0 10px;">مثال: +972 لفلسطين/إسرائيل، +966 للسعودية، +971 للإمارات</p>
                 <div id="recaptcha-container"></div>
                 <button class="button button--cta" id="sendOtpBtn" style="width:100%;margin-top:10px;"><i class="fas fa-paper-plane"></i> إرسال رمز التحقق</button>
             </div>
             <div id="phoneStep2" style="display:none;">
-                <p style="color:var(--gray-300);margin:10px 0;">تم إرسال رمز التحقق إلى:</p>
+                <div style="background:rgba(76,175,80,0.08);border:1px solid rgba(76,175,80,0.2);border-radius:10px;padding:14px;margin:12px 0;">
+                    <p style="margin:0 0 5px;font-size:14px;color:#4caf50;font-weight:700;"><i class="fas fa-check-circle" style="margin-left:5px;"></i> تم إرسال رسالة SMS!</p>
+                    <p style="margin:0;font-size:12px;color:var(--gray-400);">وصلت رسالة نصية تحتوي على رمز مكون من <strong style="color:var(--red-primary);">6 أرقام</strong> إلى رقمك:</p>
+                </div>
                 <p id="verifyPhoneDisplay" style="color:var(--red-primary);font-weight:700;font-size:1.2rem;direction:ltr;margin:5px 0 15px;"></p>
                 <div class="form-group" style="text-align:right;">
-                    <label><i class="fas fa-key"></i> رمز التحقق (6 أرقام)</label>
+                    <label><i class="fas fa-key"></i> أدخل رمز التحقق الذي وصلك</label>
                     <input type="text" id="otpCodeInput" placeholder="123456" maxlength="6" style="direction:ltr;text-align:center;font-size:1.3rem;letter-spacing:8px;">
                 </div>
                 <button class="button button--cta" id="verifyOtpBtn" style="width:100%;margin-top:10px;"><i class="fas fa-check-circle"></i> تأكيد الرمز</button>
@@ -4414,16 +4430,22 @@
                 'auth/email-already-in-use': 'هذا البريد الإلكتروني مستخدم بالفعل',
                 'auth/invalid-email': 'البريد الإلكتروني غير صالح',
                 'auth/weak-password': 'كلمة المرور ضعيفة جداً - يجب أن تكون 6 أحرف على الأقل وتحتوي على أرقام وحروف',
-                'auth/user-not-found': 'لا يوجد حساب بهذا البريد الإلكتروني',
-                'auth/wrong-password': 'كلمة المرور غير صحيحة',
-                'auth/invalid-credential': 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
-                'auth/too-many-requests': 'محاولات كثيرة جداً. حاول لاحقاً',
-                'auth/network-request-failed': 'مشكلة في الاتصال بالإنترنت',
-                'auth/operation-not-allowed': 'تسجيل الدخول بالإيميل غير مفعّل. تواصل مع الإدارة',
+                'auth/user-not-found': 'لا يوجد حساب بهذا البريد الإلكتروني. إذا لم يكن لديك حساب، اضغط على "إنشاء حساب جديد"',
+                'auth/wrong-password': 'كلمة المرور غير صحيحة. تأكد من كتابتها بشكل صحيح',
+                'auth/invalid-credential': 'البريد الإلكتروني أو كلمة المرور غير صحيحة. تأكد من المعلومات أو اضغط "إنشاء حساب جديد" إذا لم يكن لديك حساب',
+                'auth/too-many-requests': 'محاولات كثيرة جداً. انتظر قليلاً ثم حاول مرة أخرى',
+                'auth/network-request-failed': 'مشكلة في الاتصال بالإنترنت. تحقق من اتصالك وحاول مرة أخرى',
+                'auth/operation-not-allowed': 'هذه الخدمة غير مفعّلة حالياً. تواصل مع الإدارة',
                 'auth/missing-password': 'يرجى إدخال كلمة المرور',
                 'auth/missing-email': 'يرجى إدخال البريد الإلكتروني'
             };
             return msgs[code] || 'خطأ: ' + (code || 'غير معروف') + ' - حاول مرة أخرى';
+        }
+
+        function normalizePhone(phone) {
+            phone = phone.replace(/[\s\-()]/g, '');
+            phone = phone.replace(/^(\+\d{1,3})0+/, '$1');
+            return phone;
         }
 
         function showAuthError(elementId, msg) {
@@ -4459,15 +4481,17 @@
                     navUserIcon.style.color = '#4caf50';
                     navUserBtn.title = 'الملف الشخصي - ' + displayName;
                     navUserBtn.classList.add('logged-in');
+                    document.getElementById('navLoginText').style.display = 'none';
                     navLogoutBtn.style.display = 'inline-flex';
                 });
             } else {
                 currentUserData = null;
                 navUserDisplay.style.display = 'none';
                 navUserName.textContent = '';
-                navUserIcon.className = 'fas fa-user';
+                navUserIcon.className = 'fas fa-user-circle';
                 navUserIcon.style.color = '';
                 navUserBtn.title = 'تسجيل الدخول';
+                document.getElementById('navLoginText').style.display = '';
                 navUserBtn.classList.remove('logged-in');
                 navLogoutBtn.style.display = 'none';
             }
@@ -4573,14 +4597,15 @@
             const fullName = document.getElementById('signupFullName').value.trim();
             const username = document.getElementById('signupUsername').value.trim();
             const email = document.getElementById('signupEmail').value.trim();
-            const phone = document.getElementById('signupPhone').value.trim();
+            var phone = normalizePhone(document.getElementById('signupPhone').value.trim());
             const password = document.getElementById('signupPassword').value;
             const passwordConfirm = document.getElementById('signupPasswordConfirm').value;
 
             if (!fullName) { showAuthError('signupError', 'يرجى إدخال الاسم الكامل'); return; }
             if (!username) { showAuthError('signupError', 'يرجى إدخال اسم المستخدم'); return; }
             if (!email) { showAuthError('signupError', 'يرجى إدخال البريد الإلكتروني'); return; }
-            if (!phone) { showAuthError('signupError', 'يرجى إدخال رقم الهاتف'); return; }
+            if (!phone) { showAuthError('signupError', 'يرجى إدخال رقم الهاتف مع الرمز الدولي (مثال: +972535444886)'); return; }
+            if (!phone.startsWith('+')) { showAuthError('signupError', 'رقم الهاتف يجب أن يبدأ بالرمز الدولي (مثال: +972535444886)'); return; }
             if (!password) { showAuthError('signupError', 'يرجى إدخال كلمة المرور'); return; }
             if (password.length < 6) { showAuthError('signupError', '⚠️ كلمة المرور قصيرة جداً - يجب أن تكون 6 أحرف على الأقل'); return; }
             if (password !== passwordConfirm) { showAuthError('signupError', 'كلمتا المرور غير متطابقتين'); return; }
@@ -4725,11 +4750,12 @@
         // إرسال رمز OTP
         document.getElementById('sendOtpBtn').addEventListener('click', async () => {
             hideAuthError('verifyPhoneError');
-            const phoneNumber = document.getElementById('verifyPhoneNumber').value.trim();
+            const phoneNumber = normalizePhone(document.getElementById('verifyPhoneNumber').value.trim());
             if (!phoneNumber || !phoneNumber.startsWith('+')) {
-                showAuthError('verifyPhoneError', 'أدخل رقم الهاتف مع رمز الدولة (مثال: +972501234567)');
+                showAuthError('verifyPhoneError', 'أدخل رقم الهاتف مع رمز الدولة (مثال: +972535444886). يجب أن يبدأ بعلامة + ثم رمز الدولة');
                 return;
             }
+            document.getElementById('verifyPhoneNumber').value = phoneNumber;
             const btn = document.getElementById('sendOtpBtn');
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ الإرسال...';
@@ -4738,7 +4764,7 @@
                 document.getElementById('phoneStep1').style.display = 'none';
                 document.getElementById('phoneStep2').style.display = 'block';
                 document.getElementById('verifyPhoneDisplay').textContent = phoneNumber;
-                showNotification('تم إرسال رمز التحقق إلى هاتفك', 'success');
+                showNotification('تم إرسال رمز التحقق (6 أرقام) إلى هاتفك ' + phoneNumber, 'success');
             } catch (error) {
                 console.error('OTP error:', error);
                 if (error.code === 'auth/too-many-requests') {
