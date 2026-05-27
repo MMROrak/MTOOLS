@@ -4928,10 +4928,11 @@
 
         async function trackVisitor() {
             var ip = 'غير متاح';
-            try { var res = await fetch('https://api.ipify.org?format=json'); var data = await res.json(); ip = data.ip; } catch(e) {}
+            try { var res = await fetch('https://api.ipify.org?format=json'); var data = await res.json(); ip = data.ip; } catch(e) {
+                try { var res2 = await fetch('https://ipapi.co/json/'); var data2 = await res2.json(); ip = data2.ip; } catch(e2) {}
+            }
             var info = getFullDeviceInfo();
             var fingerprint = generateFingerprint();
-            var visitorId = fingerprint + '_' + new Date().toISOString().slice(0,10);
             var visitorData = {
                 ip: ip,
                 fingerprint: fingerprint,
@@ -4949,17 +4950,19 @@
                 touchScreen: info.touchScreen,
                 userAgent: info.userAgent,
                 visitedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                page: window.location.href
+                page: window.location.href,
+                isLoggedIn: !!(auth.currentUser),
+                userId: auth.currentUser ? auth.currentUser.uid : null
             };
             try {
-                await db.collection('visitors').doc(visitorId).set(visitorData, { merge: true });
-                console.log('Visitor tracked:', visitorId);
+                await db.collection('visitors').add(visitorData);
+                console.log('Visitor tracked successfully');
             } catch(e) {
-                console.warn('Visitor track error:', e.message);
-                console.warn('تأكد من تحديث قواعد Firestore: visitors collection يحتاج allow create: if true');
+                console.error('VISITOR TRACK FAILED:', e.code, e.message);
+                console.error('\u0644\u062d\u0644 \u0647\u0630\u0647 \u0627\u0644\u0645\u0634\u0643\u0644\u0629: Firebase Console > Firestore > Rules > \u0623\u0636\u0641 match /visitors/{doc} { allow create: if true; allow read: if request.auth != null; }');
             }
         }
-        setTimeout(trackVisitor, 3000);
+        setTimeout(trackVisitor, 2000);
 
         // تتبع أونلاين/أوفلاين للمستخدمين المسجلين
         auth.onAuthStateChanged(user => {
@@ -5129,10 +5132,11 @@
             var users = [], visitors = [], totalOrders = 0, onlineCount = 0;
 
             // ========== المستخدمين ==========
+            var usersError = null, visitorsError = null;
             try {
                 var usersSnap = await adb.collection('users').get();
                 usersSnap.forEach(function(doc) { var d = doc.data(); d.uid = doc.id; users.push(d); });
-            } catch(e) { console.warn('Users read error:', e); }
+            } catch(e) { usersError = e; console.error('Users read error:', e.code, e.message); }
 
             users.sort(function(a, b) {
                 var aT = a.lastActive && a.lastActive.toDate ? a.lastActive.toDate().getTime() : 0;
@@ -5141,7 +5145,17 @@
             });
 
             var uh = '<h3 style="color:#e63946;margin:0 0 15px;font-size:16px;"><i class="fas fa-users"></i> جميع المستخدمين المسجلين (' + users.length + ')</h3>';
-            if (users.length === 0) { uh += '<div style="text-align:center;padding:40px;color:#555;"><i class="fas fa-user-slash" style="font-size:40px;display:block;margin-bottom:10px;"></i>لا يوجد مستخدمين مسجلين بعد<br><small>أو قواعد Firestore لا تسمح بالقراءة - تأكد من تحديث القواعد</small></div>'; }
+            if (usersError) {
+                uh += '<div style="text-align:center;padding:30px;background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.2);border-radius:12px;">';
+                uh += '<i class="fas fa-exclamation-triangle" style="font-size:40px;color:#e63946;display:block;margin-bottom:12px;"></i>';
+                uh += '<p style="color:#e63946;font-size:15px;font-weight:700;margin:0 0 8px;">فشل تحميل بيانات المستخدمين!</p>';
+                uh += '<p style="color:#888;font-size:12px;margin:0 0 5px;">خطأ: ' + (usersError.code || usersError.message) + '</p>';
+                uh += '<p style="color:#aaa;font-size:12px;margin:0 0 15px;">يجب تحديث قواعد Firestore في Firebase Console</p>';
+                uh += '<div style="text-align:right;background:#0d0d15;padding:12px;border-radius:8px;font-family:monospace;font-size:11px;color:#4caf50;direction:ltr;overflow-x:auto;">';
+                uh += 'match /users/{userId} {<br>&nbsp;&nbsp;allow read: if request.auth != null;<br>&nbsp;&nbsp;allow write: if request.auth.uid == userId;<br>}';
+                uh += '</div></div>';
+            }
+            else if (users.length === 0) { uh += '<div style="text-align:center;padding:40px;color:#555;"><i class="fas fa-user-slash" style="font-size:40px;display:block;margin-bottom:10px;"></i>لا يوجد مستخدمين مسجلين بعد</div>'; }
             else {
                 users.forEach(function(u, idx) {
                     var twoMinAgo = new Date(Date.now() - 120000);
@@ -5175,12 +5189,22 @@
             try {
                 var visitorsSnap = await adb.collection('visitors').orderBy('visitedAt', 'desc').limit(200).get();
                 visitorsSnap.forEach(function(doc) { visitors.push(doc.data()); });
-            } catch(e) { console.warn('Visitors read error:', e); }
+            } catch(e) { visitorsError = e; console.error('Visitors read error:', e.code, e.message); }
 
             document.getElementById('statVisitors').textContent = visitors.length;
 
             var vh = '<h3 style="color:#2196f3;margin:0 0 15px;font-size:16px;"><i class="fas fa-eye"></i> سجل الزوار (' + visitors.length + ')</h3>';
-            if (visitors.length === 0) { vh += '<div style="text-align:center;padding:40px;color:#555;"><i class="fas fa-ghost" style="font-size:40px;display:block;margin-bottom:10px;"></i>لا يوجد زوار بعد<br><small>أو قواعد Firestore لا تسمح بقراءة مجموعة visitors</small></div>'; }
+            if (visitorsError) {
+                vh += '<div style="text-align:center;padding:30px;background:rgba(33,150,243,0.08);border:1px solid rgba(33,150,243,0.2);border-radius:12px;">';
+                vh += '<i class="fas fa-exclamation-triangle" style="font-size:40px;color:#2196f3;display:block;margin-bottom:12px;"></i>';
+                vh += '<p style="color:#2196f3;font-size:15px;font-weight:700;margin:0 0 8px;">فشل تحميل بيانات الزوار!</p>';
+                vh += '<p style="color:#888;font-size:12px;margin:0 0 5px;">خطأ: ' + (visitorsError.code || visitorsError.message) + '</p>';
+                vh += '<p style="color:#aaa;font-size:12px;margin:0 0 15px;">يجب تحديث قواعد Firestore - أضف:</p>';
+                vh += '<div style="background:#0d0d15;padding:12px;border-radius:8px;font-family:monospace;font-size:11px;color:#4caf50;direction:ltr;overflow-x:auto;">';
+                vh += 'match /visitors/{doc} {<br>&nbsp;&nbsp;allow create: if true;<br>&nbsp;&nbsp;allow read: if request.auth != null;<br>}';
+                vh += '</div></div>';
+            }
+            else if (visitors.length === 0) { vh += '<div style="text-align:center;padding:40px;color:#555;"><i class="fas fa-ghost" style="font-size:40px;display:block;margin-bottom:10px;"></i>لا يوجد زوار بعد</div>'; }
             else {
                 visitors.forEach(function(v, idx) {
                     var date = v.visitedAt && v.visitedAt.toDate ? v.visitedAt.toDate().toLocaleString('ar-EG') : '-';
