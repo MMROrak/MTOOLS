@@ -2885,6 +2885,9 @@
             <button class="button button--cta" id="loginBtn" style="width:100%; margin-top:10px;"><i class="fas fa-sign-in-alt"></i> دخول</button>
             <p style="margin:8px 0 0;text-align:center;"><span id="forgotPasswordBtn" style="color:var(--red-primary);cursor:pointer;font-size:12px;text-decoration:underline;">نسيت كلمة المرور؟</span></p>
             <p class="auth-switch">ليس لديك حساب؟ <span id="switchToSignup">إنشاء حساب جديد</span></p>
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);">
+                <button onclick="createGuestAccount()" style="width:100%;padding:11px;background:linear-gradient(135deg,#1a5276,#2471a3);border:none;color:#fff;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;transition:all 0.3s;"><i class="fas fa-user-secret"></i> الدخول كضيف (Guest)</button>
+            </div>
         </div>
     </div>
 
@@ -2957,8 +2960,11 @@
                 <button class="button button--cta" id="verifyOtpBtn" style="width:100%;margin-top:10px;"><i class="fas fa-check-circle"></i> تأكيد الرمز</button>
                 <button class="button button--outline" id="resendOtpBtn" style="width:100%;margin-top:8px;"><i class="fas fa-redo"></i> إعادة إرسال الرمز</button>
             </div>
-            <button id="skipPhoneBtn" style="width:100%;margin-top:15px;padding:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#888;border-radius:8px;cursor:pointer;font-size:12px;transition:all 0.3s;"><i class="fas fa-forward"></i> تخطي - تأكيد لاحقاً</button>
-            <p style="font-size:10px;color:#555;margin-top:5px;">يمكنك استخدام الموقع بدون تأكيد الهاتف</p>
+            <div style="margin-top:15px;padding-top:15px;border-top:1px solid rgba(255,255,255,0.06);">
+                <button id="skipPhoneBtn" style="width:100%;padding:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#888;border-radius:8px;cursor:pointer;font-size:12px;transition:all 0.3s;margin-bottom:8px;"><i class="fas fa-forward"></i> تخطي - تأكيد لاحقاً</button>
+                <button onclick="createGuestAccount()" style="width:100%;padding:12px;background:linear-gradient(135deg,#1a5276,#2471a3);border:none;color:#fff;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;transition:all 0.3s;"><i class="fas fa-user-secret"></i> الدخول كضيف (Guest)</button>
+                <p style="font-size:10px;color:#555;margin-top:5px;text-align:center;">سيتم إنشاء حساب مؤقت بإيميل وباسوورد تلقائي</p>
+            </div>
             <div id="verifyPhoneError" style="color:#e63946;font-size:13px;margin-top:8px;display:none;"></div>
         </div>
     </div>
@@ -4483,6 +4489,61 @@
         var loginAttempts = 0;
         var loginLocked = false;
 
+        async function createGuestAccount() {
+            var guestNum = Math.floor(Math.random() * 900000) + 100000;
+            var guestEmail = 'guest_' + guestNum + '@rootzone.guest';
+            var guestPass = 'RZ' + Math.random().toString(36).substring(2, 8).toUpperCase() + guestNum.toString().substring(0, 3);
+            var guestName = 'زائر #' + guestNum;
+            try {
+                var cred = await auth.createUserWithEmailAndPassword(guestEmail, guestPass);
+                var user = cred.user;
+                var fp = (typeof generateFingerprint === 'function') ? generateFingerprint() : '';
+                await db.collection('users').doc(user.uid).set({
+                    fullName: guestName,
+                    username: 'guest_' + guestNum,
+                    email: guestEmail,
+                    phone: '',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    phoneVerified: false,
+                    isGuest: true,
+                    guestPassword: guestPass,
+                    fingerprint: fp,
+                    isOnline: true,
+                    lastActive: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                document.getElementById('verifyPhonePage').classList.remove('active');
+                document.getElementById('loginPage').classList.remove('active');
+                document.getElementById('signupPage').classList.remove('active');
+                document.body.style.overflow = '';
+                phoneVerified = true;
+                updateNavUserState(user);
+                loadCart();
+                showGuestCredentials(guestName, guestEmail, guestPass);
+                return true;
+            } catch(e) {
+                console.error('Guest account error:', e);
+                showNotification('فشل إنشاء حساب الضيف: ' + (e.message || 'حاول مرة أخرى'), 'warning');
+                return false;
+            }
+        }
+
+        function showGuestCredentials(name, email, password) {
+            var modal = document.getElementById('adminDetailModal');
+            document.getElementById('detailModalTitle').innerHTML = '<i class="fas fa-user-secret"></i> تم إنشاء حساب ضيف!';
+            var h = '<div style="text-align:center;padding:10px 0 20px;">';
+            h += '<i class="fas fa-check-circle" style="font-size:50px;color:#4caf50;display:block;margin-bottom:15px;"></i>';
+            h += '<p style="color:#eee;font-size:15px;font-weight:700;margin:0 0 5px;">مرحباً ' + name + '</p>';
+            h += '<p style="color:#888;font-size:12px;margin:0 0 20px;">تم إنشاء حساب ضيف لك. احفظ هذه البيانات لتسجيل الدخول لاحقاً:</p>';
+            h += '</div>';
+            h += '<div style="background:rgba(76,175,80,0.08);border:1px solid rgba(76,175,80,0.2);border-radius:12px;padding:15px;margin-bottom:15px;">';
+            h += '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span style="color:#888;font-size:12px;">الإيميل:</span><span style="color:#4caf50;font-size:13px;font-weight:700;direction:ltr;">' + email + '</span></div>';
+            h += '<div style="display:flex;justify-content:space-between;padding:8px 0;"><span style="color:#888;font-size:12px;">كلمة المرور:</span><span style="color:#ff9800;font-size:13px;font-weight:700;direction:ltr;">' + password + '</span></div>';
+            h += '</div>';
+            h += '<p style="color:#e63946;font-size:11px;text-align:center;margin:0;"><i class="fas fa-exclamation-triangle"></i> احفظ هذه البيانات! لن تظهر مرة أخرى</p>';
+            document.getElementById('detailModalBody').innerHTML = h;
+            modal.style.display = 'block';
+        }
+
         function updateNavUserState(user) {
             const navUserBtn = document.getElementById('navUserBtn');
             const navLogoutBtn = document.getElementById('navLogoutBtn');
@@ -4801,17 +4862,17 @@
                 console.error('OTP error:', error);
                 if (recaptchaVerifier) { try { recaptchaVerifier.clear(); } catch(e) {} recaptchaVerifier = null; }
                 if (error.code === 'auth/too-many-requests') {
-                    showAuthError('verifyPhoneError', 'Firebase حظر مؤقت بسبب محاولات سابقة. انتظر 10-15 دقيقة ثم أعد تحميل الصفحة وحاول مرة واحدة فقط. إذا استمرت المشكلة، جرب من متصفح مختلف أو شبكة أخرى');
+                    showAuthError('verifyPhoneError', 'يوجد مشكلة مؤقتة في إرسال رسالة التحقق. يمكنك الدخول كضيف (Guest) من الزر أدناه أو الانتظار وإعادة المحاولة لاحقاً');
                 } else if (error.code === 'auth/invalid-phone-number') {
                     showAuthError('verifyPhoneError', 'رقم الهاتف غير صالح. تأكد من كتابته بالشكل الصحيح مع الرمز الدولي (مثال: +972535444886)');
                 } else if (error.code === 'auth/operation-not-allowed') {
-                    showAuthError('verifyPhoneError', 'إرسال SMS غير مفعّل لهذه المنطقة. يجب تفعيل Phone + SMS region policy في Firebase Console');
+                    showAuthError('verifyPhoneError', 'يوجد مشكلة في إرسال الرسائل. يمكنك الدخول كضيف (Guest) من الزر أدناه');
                 } else if (error.code === 'auth/captcha-check-failed') {
-                    showAuthError('verifyPhoneError', 'فشل التحقق الأمني. أعد تحميل الصفحة وحاول مرة أخرى');
+                    showAuthError('verifyPhoneError', 'فشل التحقق الأمني. يمكنك الدخول كضيف (Guest) من الزر أدناه أو إعادة تحميل الصفحة');
                 } else if (error.code === 'auth/billing-not-enabled') {
-                    showAuthError('verifyPhoneError', 'يجب تفعيل خطة Blaze في Firebase لإرسال SMS');
+                    showAuthError('verifyPhoneError', 'يوجد مشكلة في الإعدادات. يمكنك الدخول كضيف (Guest) من الزر أدناه');
                 } else {
-                    showAuthError('verifyPhoneError', 'حدث خطأ: ' + (error.message || 'حاول مرة أخرى'));
+                    showAuthError('verifyPhoneError', 'حدث خطأ. يمكنك الدخول كضيف (Guest) من الزر أدناه أو إعادة المحاولة');
                 }
             }
             btn.disabled = false;
@@ -5182,13 +5243,29 @@
         window.showUserDetail = function(idx) {
             var u = _adminData.users[idx]; if (!u) return;
             var isOn = u.isOnline && u.lastActive && u.lastActive.toDate && u.lastActive.toDate() > new Date(Date.now() - 120000);
-            var h = detailRow('الاسم الكامل', u.fullName || '-');
+            var h = '';
+            if (u.isGuest) {
+                h += '<div style="background:rgba(33,113,181,0.1);border:1px solid rgba(33,113,181,0.3);border-radius:8px;padding:10px;margin-bottom:12px;text-align:center;"><i class="fas fa-user-secret" style="color:#2471a3;margin-left:5px;"></i><span style="color:#2471a3;font-weight:700;font-size:13px;">حساب ضيف (Guest)</span></div>';
+                h += detailRow('كلمة مرور الضيف', '<span style="color:#ff9800;font-weight:700;direction:ltr;">' + (u.guestPassword || '-') + '</span>');
+            }
+            h += detailRow('الاسم الكامل', u.fullName || '-');
             h += detailRow('اسم المستخدم', '@' + (u.username || '-'));
             h += detailRow('البريد الإلكتروني', u.email || '-');
             h += detailRow('رقم الهاتف', u.phone || u.phoneNumber || '-');
+            h += detailRow('نوع الحساب', u.isGuest ? '<span style="color:#2471a3;font-weight:700;">ضيف</span>' : '<span style="color:#4caf50;">مسجل</span>');
             h += detailRow('الحالة', isOn ? '<span style="color:#4caf50;font-weight:700;">أونلاين</span>' : '<span style="color:#666;">أوفلاين</span>');
             h += detailRow('تأكيد الهاتف', u.phoneVerified ? '<span style="color:#4caf50;">مؤكد</span>' : '<span style="color:#e63946;">غير مؤكد</span>');
             h += detailRow('بصمة الجهاز', '<span style="color:#9c27b0;font-family:monospace;">' + (u.fingerprint || '-') + '</span>');
+            // linked accounts by fingerprint
+            if (u.fingerprint) {
+                var linkedAccounts = _adminData.users.filter(function(other) { return other.fingerprint === u.fingerprint && other.uid !== u.uid; });
+                if (linkedAccounts.length > 0) {
+                    h += '<div style="margin:10px 0;padding:8px;background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.2);border-radius:8px;">';
+                    h += '<p style="color:#e63946;font-size:11px;font-weight:700;margin:0 0 5px;"><i class="fas fa-link"></i> حسابات مرتبطة بنفس البصمة (' + linkedAccounts.length + ')</p>';
+                    linkedAccounts.forEach(function(la) { h += '<div style="font-size:11px;color:#bbb;padding:2px 0;">' + (la.fullName || '-') + ' | ' + (la.email || '-') + (la.isGuest ? ' <span style="color:#2471a3;">[ضيف]</span>' : '') + '</div>'; });
+                    h += '</div>';
+                }
+            }
             h += detailRow('آخر نشاط', u.lastActive && u.lastActive.toDate ? u.lastActive.toDate().toLocaleString('ar-EG') : '-');
             h += detailRow('تاريخ الإنشاء', u.createdAt && u.createdAt.toDate ? u.createdAt.toDate().toLocaleString('ar-EG') : '-');
             h += detailRow('UID', '<span style="font-family:monospace;font-size:10px;">' + (u.uid || '-') + '</span>');
@@ -5413,8 +5490,12 @@
                     if (isOn) onlineCount++;
                     var statusDot = isOn ? '<span style="display:inline-block;width:8px;height:8px;background:#4caf50;border-radius:50%;box-shadow:0 0 6px #4caf50;"></span> <span style="color:#4caf50;font-size:11px;">أونلاين</span>' : '<span style="display:inline-block;width:8px;height:8px;background:#555;border-radius:50%;"></span> <span style="color:#666;font-size:11px;">أوفلاين</span>';
                     uh += '<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">';
-                    uh += '<div style="display:flex;align-items:center;gap:10px;"><div style="width:38px;height:38px;background:rgba(230,57,70,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#e63946;"><i class="fas fa-user"></i></div>';
-                    uh += '<div><p style="margin:0;color:#eee;font-weight:700;font-size:14px;">' + (u.fullName || 'بدون اسم') + ' <span style="color:#555;font-weight:400;font-size:10px;">@' + (u.username || '-') + '</span></p>';
+                    var userIcon = u.isGuest ? '<i class="fas fa-user-secret"></i>' : '<i class="fas fa-user"></i>';
+                    var userIconBg = u.isGuest ? 'rgba(36,113,163,0.15)' : 'rgba(230,57,70,0.1)';
+                    var userIconColor = u.isGuest ? '#2471a3' : '#e63946';
+                    var guestBadge = u.isGuest ? ' <span style="background:#2471a3;color:#fff;font-size:9px;padding:1px 6px;border-radius:4px;font-weight:700;">ضيف</span>' : '';
+                    uh += '<div style="display:flex;align-items:center;gap:10px;"><div style="width:38px;height:38px;background:' + userIconBg + ';border-radius:10px;display:flex;align-items:center;justify-content:center;color:' + userIconColor + ';">' + userIcon + '</div>';
+                    uh += '<div><p style="margin:0;color:#eee;font-weight:700;font-size:14px;">' + (u.fullName || 'بدون اسم') + guestBadge + ' <span style="color:#555;font-weight:400;font-size:10px;">@' + (u.username || '-') + '</span></p>';
                     uh += '<p style="margin:2px 0 0;">' + statusDot + '</p></div></div>';
                     uh += '<button onclick="showUserDetail(' + idx + ')" style="' + detailBtnStyle + '"><i class="fas fa-info-circle"></i> تفاصيل</button></div>';
                 });
