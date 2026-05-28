@@ -4508,6 +4508,7 @@
                 var cred = await auth.createUserWithEmailAndPassword(guestEmail, guestPass);
                 var user = cred.user;
                 var fp = (typeof generateFingerprint === 'function') ? generateFingerprint() : '';
+                var hwfp = (typeof getHardwareFingerprint === 'function') ? getHardwareFingerprint() : '';
                 await db.collection('users').doc(user.uid).set({
                     fullName: guestName,
                     username: 'guest_' + guestNum,
@@ -4518,6 +4519,7 @@
                     isGuest: true,
                     guestPassword: guestPass,
                     fingerprint: fp,
+                    hwFingerprint: hwfp,
                     isOnline: true,
                     lastActive: firebase.firestore.FieldValue.serverTimestamp()
                 });
@@ -4724,6 +4726,7 @@
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                         phoneVerified: false,
                         fingerprint: (typeof generateFingerprint === 'function') ? generateFingerprint() : '',
+                        hwFingerprint: (typeof getHardwareFingerprint === 'function') ? getHardwareFingerprint() : '',
                         isOnline: true,
                         lastActive: firebase.firestore.FieldValue.serverTimestamp()
                     });
@@ -4997,16 +5000,98 @@
 
         // ==================== تتبع الزوار وحفظ معلومات الجهاز ====================
         function generateFingerprint() {
-            var canvas = document.createElement('canvas');
-            var ctx = canvas.getContext('2d');
-            ctx.textBaseline = 'top';
-            ctx.font = '14px Arial';
-            ctx.fillText('fingerprint', 2, 2);
-            var canvasData = canvas.toDataURL();
-            var fp = navigator.userAgent + '|' + screen.width + 'x' + screen.height + '|' + screen.colorDepth + '|' + new Date().getTimezoneOffset() + '|' + navigator.language + '|' + navigator.hardwareConcurrency + '|' + canvasData.substring(0, 50);
+            var parts = [];
+            parts.push(screen.width + 'x' + screen.height);
+            parts.push(screen.colorDepth);
+            parts.push(new Date().getTimezoneOffset());
+            parts.push(navigator.hardwareConcurrency || 0);
+            parts.push(navigator.deviceMemory || 0);
+            parts.push(navigator.platform || '');
+            parts.push(navigator.maxTouchPoints || 0);
+            try { var tz = Intl.DateTimeFormat().resolvedOptions().timeZone; parts.push(tz); } catch(e) { parts.push(''); }
+            try {
+                var canvas = document.createElement('canvas');
+                canvas.width = 200; canvas.height = 50;
+                var ctx = canvas.getContext('2d');
+                ctx.textBaseline = 'top';
+                ctx.font = '14px Arial'; ctx.fillStyle = '#f60'; ctx.fillRect(0, 0, 50, 50);
+                ctx.fillStyle = '#069'; ctx.font = '14px Times New Roman'; ctx.fillText('BrowserFP!@#', 2, 15);
+                ctx.strokeStyle = 'rgba(100,200,0,0.7)'; ctx.arc(75, 25, 15, 0, Math.PI * 2); ctx.stroke();
+                parts.push(canvas.toDataURL().substring(22, 80));
+            } catch(e) { parts.push('no-canvas'); }
+            try {
+                var gl = document.createElement('canvas').getContext('webgl') || document.createElement('canvas').getContext('experimental-webgl');
+                if (gl) {
+                    var ext = gl.getExtension('WEBGL_debug_renderer_info');
+                    parts.push(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
+                    parts.push(ext ? gl.getParameter(ext.UNMASKED_VENDOR_WEBGL) : gl.getParameter(gl.VENDOR));
+                }
+            } catch(e) { parts.push('no-webgl'); }
+            try {
+                var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                var osc = audioCtx.createOscillator(); var analyser = audioCtx.createAnalyser();
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(10000, audioCtx.currentTime);
+                var gain = audioCtx.createGain(); gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                osc.connect(analyser); analyser.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(0);
+                var freqData = new Float32Array(analyser.frequencyBinCount);
+                analyser.getFloatFrequencyData(freqData);
+                var audioSum = 0; for (var i = 0; i < Math.min(freqData.length, 30); i++) audioSum += Math.abs(freqData[i]);
+                parts.push(audioSum.toFixed(2));
+                osc.stop(); audioCtx.close();
+            } catch(e) { parts.push('no-audio'); }
+            var fp = parts.join('|||');
             var hash = 0;
             for (var i = 0; i < fp.length; i++) { hash = ((hash << 5) - hash) + fp.charCodeAt(i); hash |= 0; }
             return 'FP-' + Math.abs(hash).toString(16).toUpperCase();
+        }
+
+        function getHardwareFingerprint() {
+            var hw = [];
+            hw.push(screen.width + 'x' + screen.height);
+            hw.push(screen.colorDepth);
+            hw.push(navigator.hardwareConcurrency || 0);
+            hw.push(navigator.deviceMemory || 0);
+            hw.push(navigator.maxTouchPoints || 0);
+            hw.push(new Date().getTimezoneOffset());
+            try {
+                var gl = document.createElement('canvas').getContext('webgl') || document.createElement('canvas').getContext('experimental-webgl');
+                if (gl) { var ext = gl.getExtension('WEBGL_debug_renderer_info'); hw.push(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : ''); }
+            } catch(e) {}
+            var hfp = hw.join('|');
+            var hash = 0;
+            for (var i = 0; i < hfp.length; i++) { hash = ((hash << 5) - hash) + hfp.charCodeAt(i); hash |= 0; }
+            return 'HW-' + Math.abs(hash).toString(16).toUpperCase();
+        }
+
+        async function detectVPN() {
+            var result = { isVPN: false, localIPs: [], publicIP: '' };
+            try {
+                var pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+                pc.createDataChannel('');
+                var offer = await pc.createOffer(); await pc.setLocalDescription(offer);
+                await new Promise(function(resolve) {
+                    var timeout = setTimeout(resolve, 3000);
+                    pc.onicecandidate = function(e) {
+                        if (!e.candidate) { clearTimeout(timeout); resolve(); return; }
+                        var parts = e.candidate.candidate.split(' ');
+                        if (parts.length > 4) {
+                            var ip = parts[4];
+                            if (ip.indexOf('.') !== -1 && ip !== '0.0.0.0') result.localIPs.push(ip);
+                        }
+                    };
+                });
+                pc.close();
+            } catch(e) {}
+            try { var res = await fetch('https://api.ipify.org?format=json'); var data = await res.json(); result.publicIP = data.ip; } catch(e) {}
+            if (result.localIPs.length > 0 && result.publicIP) {
+                var localNet = result.localIPs.some(function(ip) { return ip.startsWith('10.') || ip.startsWith('192.168.') || ip.startsWith('172.'); });
+                if (localNet) {
+                    var localIP = result.localIPs[0];
+                    result.isVPN = !(localIP.startsWith('192.168.') || localIP.startsWith('10.0.'));
+                }
+            }
+            return result;
         }
 
         function getFullDeviceInfo() {
@@ -5045,9 +5130,15 @@
             }
             var info = getFullDeviceInfo();
             var fingerprint = generateFingerprint();
+            var hwFingerprint = getHardwareFingerprint();
+            var vpnInfo = { isVPN: false, localIPs: [], publicIP: ip };
+            try { vpnInfo = await detectVPN(); } catch(e) {}
             var visitorData = {
                 ip: ip,
                 fingerprint: fingerprint,
+                hwFingerprint: hwFingerprint,
+                vpnDetected: vpnInfo.isVPN,
+                localIPs: vpnInfo.localIPs.join(', '),
                 os: info.os,
                 browser: info.browser,
                 device: info.device,
@@ -5279,16 +5370,41 @@
             h += detailRow('نوع الحساب', u.isGuest ? '<span style="color:#2471a3;font-weight:700;">ضيف</span>' : '<span style="color:#4caf50;">مسجل</span>');
             h += detailRow('الحالة', isOn ? '<span style="color:#4caf50;font-weight:700;">أونلاين</span>' : '<span style="color:#666;">أوفلاين</span>');
             h += detailRow('تأكيد الهاتف', u.phoneVerified ? '<span style="color:#4caf50;">مؤكد</span>' : '<span style="color:#e63946;">غير مؤكد</span>');
-            h += detailRow('بصمة الجهاز', '<span style="color:#9c27b0;font-family:monospace;">' + (u.fingerprint || '-') + '</span>');
-            // linked accounts by fingerprint
-            if (u.fingerprint) {
-                var linkedAccounts = _adminData.users.filter(function(other) { return other.fingerprint === u.fingerprint && other.uid !== u.uid; });
-                if (linkedAccounts.length > 0) {
-                    h += '<div style="margin:10px 0;padding:8px;background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.2);border-radius:8px;">';
-                    h += '<p style="color:#e63946;font-size:11px;font-weight:700;margin:0 0 5px;"><i class="fas fa-link"></i> حسابات مرتبطة بنفس البصمة (' + linkedAccounts.length + ')</p>';
-                    linkedAccounts.forEach(function(la) { h += '<div style="font-size:11px;color:#bbb;padding:2px 0;">' + (la.fullName || '-') + ' | ' + (la.email || '-') + (la.isGuest ? ' <span style="color:#2471a3;">[ضيف]</span>' : '') + '</div>'; });
+            h += detailRow('بصمة المتصفح', '<span style="color:#9c27b0;font-family:monospace;font-size:10px;">' + (u.fingerprint || '-') + '</span>');
+            h += detailRow('بصمة الجهاز (عبر المتصفحات)', '<span style="color:#e91e63;font-family:monospace;font-size:10px;">' + (u.hwFingerprint || '-') + '</span>');
+            // similarity-based linking
+            var linked = [];
+            _adminData.users.forEach(function(other) {
+                if (other.uid === u.uid) return;
+                var score = 0, reasons = [];
+                if (u.fingerprint && other.fingerprint && u.fingerprint === other.fingerprint) { score += 40; reasons.push('بصمة متصفح'); }
+                if (u.hwFingerprint && other.hwFingerprint && u.hwFingerprint === other.hwFingerprint) { score += 50; reasons.push('بصمة جهاز'); }
+                var uVisitors = _adminData.visitors.filter(function(v) { return v.userId === u.uid; });
+                var oVisitors = _adminData.visitors.filter(function(v) { return v.userId === other.uid; });
+                var uIPs = uVisitors.map(function(v) { return v.ip; }).filter(Boolean);
+                var oIPs = oVisitors.map(function(v) { return v.ip; }).filter(Boolean);
+                var commonIPs = uIPs.filter(function(ip) { return oIPs.indexOf(ip) !== -1 && ip !== 'غير متاح'; });
+                if (commonIPs.length > 0) { score += 30; reasons.push('IP مشترك: ' + commonIPs[0]); }
+                var uHW = uVisitors.map(function(v) { return v.hwFingerprint; }).filter(Boolean);
+                var oHW = oVisitors.map(function(v) { return v.hwFingerprint; }).filter(Boolean);
+                var commonHW = uHW.filter(function(h) { return oHW.indexOf(h) !== -1; });
+                if (commonHW.length > 0 && score < 50) { score += 40; reasons.push('بصمة جهاز مشتركة'); }
+                if (score >= 30) linked.push({ user: other, score: score, reasons: reasons });
+            });
+            if (linked.length > 0) {
+                linked.sort(function(a, b) { return b.score - a.score; });
+                h += '<div style="margin:12px 0;padding:10px;background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.2);border-radius:8px;">';
+                h += '<p style="color:#e63946;font-size:12px;font-weight:700;margin:0 0 8px;"><i class="fas fa-exclamation-triangle"></i> حسابات مشبوهة - احتمال نفس الشخص (' + linked.length + ')</p>';
+                linked.forEach(function(l) {
+                    var pct = Math.min(l.score, 100);
+                    var barColor = pct >= 80 ? '#e63946' : pct >= 50 ? '#ff9800' : '#ffc107';
+                    h += '<div style="padding:6px 8px;background:rgba(0,0,0,0.2);border-radius:6px;margin-bottom:4px;">';
+                    h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;"><span style="color:#ddd;font-size:11px;">' + (l.user.fullName || '-') + (l.user.isGuest ? ' <span style="color:#2471a3;">[ضيف]</span>' : '') + '</span><span style="color:' + barColor + ';font-size:11px;font-weight:700;">' + pct + '% تطابق</span></div>';
+                    h += '<div style="width:100%;height:4px;background:#1a1a2a;border-radius:2px;"><div style="width:' + pct + '%;height:100%;background:' + barColor + ';border-radius:2px;"></div></div>';
+                    h += '<div style="color:#777;font-size:9px;margin-top:2px;">' + l.reasons.join(' • ') + '</div>';
                     h += '</div>';
-                }
+                });
+                h += '</div>';
             }
             h += detailRow('آخر نشاط', u.lastActive && u.lastActive.toDate ? u.lastActive.toDate().toLocaleString('ar-EG') : '-');
             h += detailRow('تاريخ الإنشاء', u.createdAt && u.createdAt.toDate ? u.createdAt.toDate().toLocaleString('ar-EG') : '-');
@@ -5340,7 +5456,10 @@
         window.showVisitorDetail = function(idx) {
             var v = _adminData.visitors[idx]; if (!v) return;
             var h = detailRow('عنوان IP', v.ip || '-', '#ff9800');
-            h += detailRow('بصمة الجهاز', '<span style="color:#9c27b0;font-family:monospace;">' + (v.fingerprint || '-') + '</span>');
+            if (v.vpnDetected) h += '<div style="background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.3);border-radius:6px;padding:6px 10px;margin:5px 0;"><i class="fas fa-shield-alt" style="color:#e63946;margin-left:5px;"></i><span style="color:#e63946;font-size:11px;font-weight:700;">VPN/بروكسي مكتشف!</span></div>';
+            if (v.localIPs) h += detailRow('IPs المحلية (WebRTC)', '<span style="color:#ff5722;font-family:monospace;font-size:10px;">' + v.localIPs + '</span>');
+            h += detailRow('بصمة المتصفح', '<span style="color:#9c27b0;font-family:monospace;font-size:10px;">' + (v.fingerprint || '-') + '</span>');
+            h += detailRow('بصمة الجهاز (عبر المتصفحات)', '<span style="color:#e91e63;font-family:monospace;font-size:10px;">' + (v.hwFingerprint || '-') + '</span>');
             h += detailRow('نوع الجهاز', v.device || '-');
             h += detailRow('نظام التشغيل', v.os || '-');
             h += detailRow('المتصفح', v.browser || '-');
@@ -5358,11 +5477,13 @@
             h += detailRow('الصفحة', v.page || '-');
             h += detailRow('تاريخ الزيارة', v.visitedAt && v.visitedAt.toDate ? v.visitedAt.toDate().toLocaleString('ar-EG') : '-');
             h += detailRow('User Agent', '<span style="font-size:9px;word-break:break-all;">' + (v.userAgent || '-') + '</span>');
-            // find matching users
-            var matchUsers = _adminData.users.filter(function(u) { return u.fingerprint && u.fingerprint === v.fingerprint; });
+            // find matching users by fingerprint OR hwFingerprint
+            var matchUsers = _adminData.users.filter(function(u) {
+                return (u.fingerprint && u.fingerprint === v.fingerprint) || (u.hwFingerprint && v.hwFingerprint && u.hwFingerprint === v.hwFingerprint);
+            });
             if (matchUsers.length > 0) {
-                h += '<div style="margin-top:15px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);"><p style="color:#e63946;font-weight:700;font-size:13px;margin:0 0 8px;"><i class="fas fa-user"></i> حسابات بنفس البصمة (' + matchUsers.length + ')</p>';
-                matchUsers.forEach(function(u) { h += '<div style="font-size:11px;color:#bbb;padding:3px 0;">' + (u.fullName || '-') + ' (@' + (u.username || '-') + ') - ' + (u.email || '') + '</div>'; });
+                h += '<div style="margin-top:15px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);"><p style="color:#e63946;font-weight:700;font-size:13px;margin:0 0 8px;"><i class="fas fa-user"></i> حسابات مطابقة (' + matchUsers.length + ')</p>';
+                matchUsers.forEach(function(u) { h += '<div style="font-size:11px;color:#bbb;padding:3px 0;">' + (u.fullName || '-') + ' (@' + (u.username || '-') + ') - ' + (u.email || '') + (u.isGuest ? ' <span style="color:#2471a3;">[ضيف]</span>' : '') + '</div>'; });
                 h += '</div>';
             }
             document.getElementById('detailModalTitle').innerHTML = '<i class="fas fa-eye"></i> تفاصيل الزائر #' + (idx + 1);
@@ -5662,9 +5783,24 @@
             });
             var userFpMap = {};
             _adminData.users.forEach(function(u) { if (u.fingerprint) { if (!userFpMap[u.fingerprint]) userFpMap[u.fingerprint] = []; userFpMap[u.fingerprint].push(u); } });
+            var userHwMap = {};
+            _adminData.users.forEach(function(u) { if (u.hwFingerprint) { if (!userHwMap[u.hwFingerprint]) userHwMap[u.hwFingerprint] = []; userHwMap[u.hwFingerprint].push(u); } });
             document.getElementById('statFingerprints').textContent = Object.keys(fpMap).length;
 
             var fh = '<h3 style="color:#9c27b0;margin:0 0 15px;font-size:16px;"><i class="fas fa-fingerprint"></i> كشف الحسابات والزيارات المكررة</h3>';
+            // hardware fingerprint duplicates (cross-browser)
+            var dupHw = Object.keys(userHwMap).filter(function(k) { return userHwMap[k].length > 1; });
+            if (dupHw.length > 0) {
+                fh += '<div style="background:rgba(233,30,99,0.05);border:1px solid rgba(233,30,99,0.15);border-radius:12px;padding:16px;margin-bottom:15px;">';
+                fh += '<p style="margin:0 0 10px;color:#e91e63;font-weight:700;font-size:14px;"><i class="fas fa-laptop"></i> نفس الجهاز بمتصفحات مختلفة!</p>';
+                dupHw.forEach(function(hw) {
+                    fh += '<div style="margin-bottom:8px;padding:10px;background:rgba(0,0,0,0.2);border-radius:8px;">';
+                    fh += '<p style="margin:0 0 3px;color:#e91e63;font-family:monospace;font-size:11px;">' + hw + '</p>';
+                    userHwMap[hw].forEach(function(u) { fh += '<p style="margin:1px 0;color:#bbb;font-size:11px;">• ' + (u.fullName || '-') + ' - ' + (u.email || '') + (u.isGuest ? ' <span style="color:#2471a3;">[ضيف]</span>' : '') + '</p>'; });
+                    fh += '</div>';
+                });
+                fh += '</div>';
+            }
             var dupUsers = Object.keys(userFpMap).filter(function(k) { return userFpMap[k].length > 1; });
             if (dupUsers.length > 0) {
                 fh += '<div style="background:rgba(230,57,70,0.05);border:1px solid rgba(230,57,70,0.15);border-radius:12px;padding:16px;margin-bottom:15px;">';
