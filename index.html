@@ -4489,16 +4489,9 @@
         var loginLocked = false;
 
         async function createGuestAccount() {
-            var existingUser = auth.currentUser;
-            if (existingUser) {
-                phoneVerified = true;
-                document.getElementById('verifyPhonePage').classList.remove('active');
-                document.getElementById('loginPage').classList.remove('active');
-                document.body.style.overflow = '';
-                updateNavUserState(existingUser);
-                loadCart();
-                showNotification('تم الدخول بحسابك الحالي بدون تأكيد الهاتف', 'success');
-                return true;
+            // sign out any existing user first so we always create a fresh guest
+            if (auth.currentUser) {
+                try { await auth.signOut(); } catch(e) { console.warn('signout before guest:', e); }
             }
             var guestNum = Math.floor(Math.random() * 900000) + 100000;
             var guestEmail = 'guest_' + guestNum + '@rootzone.guest';
