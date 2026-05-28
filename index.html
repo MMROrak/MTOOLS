@@ -4517,11 +4517,17 @@
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     phoneVerified: false,
                     isGuest: true,
-                    guestPassword: guestPass,
                     fingerprint: fp,
                     hwFingerprint: hwfp,
                     isOnline: true,
                     lastActive: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                await db.collection('guestCredentials').doc(user.uid).set({
+                    email: guestEmail,
+                    password: guestPass,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    fingerprint: fp,
+                    hwFingerprint: hwfp
                 });
                 document.getElementById('verifyPhonePage').classList.remove('active');
                 document.getElementById('loginPage').classList.remove('active');
@@ -5363,23 +5369,15 @@
     <script>
     (function() {
         var _H = {
-            u: 'a3c2d1e08b6f4971c5e3f62a8d7b0c9e1f4a5b6d8c7e9f0a2b3c4d5e6f7a8b9',
-            p: 'b4d3e2f19c7a5082d6f4a73b9e8c1d0f2a5b6c7e9d8f0a1b3c4d5e6f7a8b9c0',
-            s: 'c5e4f3a20d8b6193e7a5b84c0f9d2e1a3b6c7d8f0e9a1b2c4d5e6f7a8b9c0d1'
+            u: 'daaa4d4ccbaea7b9d94877815428778a2f6bbfc72651396a1e551234178b0548',
+            p: '123e48cb1df90079b5f3f8adb41b4a677f989e9f4c9d9022a2f65f3c10fbef0f',
+            s: '618f70312295ee4f4d7f3859802eb4034fc42508f9d840b4284b8d7218f7b47a'
         };
         async function _sha(str) {
             var enc = new TextEncoder().encode(str + '_rz_salt_2024_');
             var hash = await crypto.subtle.digest('SHA-256', enc);
             return Array.from(new Uint8Array(hash)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
         }
-        // pre-compute hashes on load
-        var _k = [114,111,111,116,122,111,110,101,95,97,100,109,105,110];
-        var _p = [82,48,48,116,90,48,110,51,33,64,35,50,48,50,52];
-        var _s = [88,107,82,57,36,109,80,50,118,76,55,35,113,87,52,110,90,56,106,70,53,98,89,49,99,84,54,103,65,51,104,68];
-        function _d(a) { return a.map(function(c) { return String.fromCharCode(c); }).join(''); }
-        var ADMIN_USER = _d(_k);
-        var ADMIN_PASS = _d(_p);
-        var ADMIN_SECRET = _d(_s);
         var adminAttempts = parseInt(localStorage.getItem('_rz_aa') || '0');
         var adminBanTime = parseInt(localStorage.getItem('_rz_ab') || '0');
         var adminLocked = false;
@@ -5392,7 +5390,7 @@
         window.addEventListener('hashchange', checkAdminAccess);
         checkAdminAccess();
 
-        document.getElementById('adminLoginBtn').addEventListener('click', function() {
+        document.getElementById('adminLoginBtn').addEventListener('click', async function() {
             var errEl = document.getElementById('adminLoginError');
             if (adminLocked) {
                 var remain = adminBanTime - Date.now();
@@ -5403,7 +5401,8 @@
                 } else { adminLocked = false; adminAttempts = 0; localStorage.removeItem('_rz_ab'); localStorage.setItem('_rz_aa', '0'); }
             }
             var u = document.getElementById('adminUser').value.trim(), p = document.getElementById('adminPass').value, s = document.getElementById('adminSecret').value;
-            if (u === ADMIN_USER && p === ADMIN_PASS && s === ADMIN_SECRET) {
+            var uHash = await _sha(u), pHash = await _sha(p), sHash = await _sha(s);
+            if (uHash === _H.u && pHash === _H.p && sHash === _H.s) {
                 adminAttempts = 0; localStorage.setItem('_rz_aa', '0'); localStorage.removeItem('_rz_ab');
                 document.getElementById('adminLoginBox').style.display = 'none';
                 document.getElementById('adminDashboard').style.display = 'block';
@@ -5820,6 +5819,13 @@
                 var usersSnap = await adb.collection('users').get();
                 usersSnap.forEach(function(doc) { var d = doc.data(); d.uid = doc.id; _adminData.users.push(d); });
             } catch(e) { usersError = e; console.error('Users read error:', e.code, e.message); }
+            // load guest credentials from separate collection
+            try {
+                var gcSnap = await adb.collection('guestCredentials').get();
+                var gcMap = {};
+                gcSnap.forEach(function(doc) { gcMap[doc.id] = doc.data(); });
+                _adminData.users.forEach(function(u) { if (u.isGuest && gcMap[u.uid]) { u.guestPassword = gcMap[u.uid].password; } });
+            } catch(e) { console.warn('Guest credentials read:', e.code); }
 
             _adminData.users.sort(function(a, b) {
                 var aT = a.lastActive && a.lastActive.toDate ? a.lastActive.toDate().getTime() : 0;
