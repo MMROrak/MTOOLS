@@ -2957,6 +2957,8 @@
                 <button class="button button--cta" id="verifyOtpBtn" style="width:100%;margin-top:10px;"><i class="fas fa-check-circle"></i> تأكيد الرمز</button>
                 <button class="button button--outline" id="resendOtpBtn" style="width:100%;margin-top:8px;"><i class="fas fa-redo"></i> إعادة إرسال الرمز</button>
             </div>
+            <button id="skipPhoneBtn" style="width:100%;margin-top:15px;padding:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#888;border-radius:8px;cursor:pointer;font-size:12px;transition:all 0.3s;"><i class="fas fa-forward"></i> تخطي - تأكيد لاحقاً</button>
+            <p style="font-size:10px;color:#555;margin-top:5px;">يمكنك استخدام الموقع بدون تأكيد الهاتف</p>
             <div id="verifyPhoneError" style="color:#e63946;font-size:13px;margin-top:8px;display:none;"></div>
         </div>
     </div>
@@ -3458,7 +3460,7 @@
        ==================================================================== */
         function loadCart() {
             const user = typeof auth !== 'undefined' ? auth.currentUser : null;
-            if (user && phoneVerified) {
+            if (user) {
                 db.collection('users').doc(user.uid).collection('cart').doc('items').get().then(doc => {
                     if (doc.exists && doc.data().items) { cart = doc.data().items; } else { cart = []; }
                     updateCartUI(); updateAllAddButtons();
@@ -3470,7 +3472,7 @@
         }
         function saveCart() {
             const user = typeof auth !== 'undefined' ? auth.currentUser : null;
-            if (user && phoneVerified) {
+            if (user) {
                 db.collection('users').doc(user.uid).collection('cart').doc('items').set({ items: cart }).catch(err => console.warn('Cart save error:', err));
             }
         }
@@ -3666,11 +3668,7 @@
                 setTimeout(() => { document.getElementById('signupPage').classList.add('active'); document.body.style.overflow = 'hidden'; }, 500);
                 return false;
             }
-            if (!phoneVerified) {
-                showNotification('يجب تأكيد رقم هاتفك أولاً', 'warning');
-                setTimeout(() => { openPhoneVerifyPage(); }, 500);
-                return false;
-            }
+
             return true;
         }
         function addProductToCart(productId, productName, productPrice, productOs, btnElement) {
@@ -4260,7 +4258,7 @@
             // Navbar user button opens login or profile
             document.getElementById('navUserBtn').addEventListener('click', () => {
                 const user = typeof auth !== 'undefined' ? auth.currentUser : null;
-                if (user && phoneVerified) {
+                if (user) {
                     openProfilePage(user);
                     return;
                 }
@@ -4491,15 +4489,15 @@
             const navUserName = document.getElementById('navUserName');
             const navUserDisplay = document.getElementById('navUserDisplay');
             const navUserIcon = document.getElementById('navUserIcon');
-            if (user && phoneVerified) {
+            if (user) {
                 db.collection('users').doc(user.uid).get().then(doc => {
                     const data = doc.exists ? doc.data() : {};
                     currentUserData = data;
                     const displayName = data.fullName || data.username || user.email.split('@')[0];
                     navUserName.textContent = displayName;
                     navUserDisplay.style.display = 'flex';
-                    navUserIcon.className = 'fas fa-user-check';
-                    navUserIcon.style.color = '#4caf50';
+                    navUserIcon.className = phoneVerified ? 'fas fa-user-check' : 'fas fa-user';
+                    navUserIcon.style.color = phoneVerified ? '#4caf50' : '#ff9800';
                     navUserBtn.title = 'الملف الشخصي - ' + displayName;
                     navUserBtn.classList.add('logged-in');
                     document.getElementById('navLoginText').style.display = 'none';
@@ -4603,13 +4601,7 @@
                         phoneVerified = false;
                     }
                     updateNavUserState(user);
-                    if (phoneVerified) {
-                        loadCart();
-                    } else {
-                        cart = [];
-                        updateCartUI();
-                        updateAllAddButtons();
-                    }
+                    loadCart();
                 }).catch(() => {
                     phoneVerified = false;
                     updateNavUserState(user);
@@ -4673,7 +4665,7 @@
                 document.getElementById('verifyPhoneNumber').value = phone.startsWith('+') ? phone : '';
                 openPhoneVerifyPage();
 
-                showNotification('تم إنشاء الحساب! أكد رقم هاتفك للمتابعة', 'success');
+                showNotification('تم إنشاء الحساب بنجاح! يمكنك تأكيد هاتفك الآن أو تخطيه', 'success');
 
                 // مسح الحقول
                 document.getElementById('signupFullName').value = '';
@@ -4713,19 +4705,16 @@
                 const userDoc = await db.collection('users').doc(user.uid).get();
                 const isPhoneVerified = userDoc.exists && userDoc.data().phoneVerified;
 
+                phoneVerified = isPhoneVerified;
+                document.getElementById('loginPage').classList.remove('active');
+                document.body.style.overflow = '';
+                showNotification('مرحباً بك مجدداً! تم تحميل سلتك ومشترياتك', 'success');
+                updateNavUserState(user);
+                loadCart();
+                document.getElementById('loginEmail').value = '';
+                document.getElementById('loginPassword').value = '';
                 if (!isPhoneVerified) {
-                    document.getElementById('loginPage').classList.remove('active');
-                    openPhoneVerifyPage();
-                    showNotification('يرجى تأكيد رقم هاتفك أولاً', 'warning');
-                } else {
-                    phoneVerified = true;
-                    document.getElementById('loginPage').classList.remove('active');
-                    document.body.style.overflow = '';
-                    showNotification('مرحباً بك مجدداً! تم تحميل سلتك ومشترياتك', 'success');
-                    updateNavUserState(user);
-                    loadCart();
-                    document.getElementById('loginEmail').value = '';
-                    document.getElementById('loginPassword').value = '';
+                    showNotification('يمكنك تأكيد رقم هاتفك من الملف الشخصي', 'info');
                 }
             } catch (error) {
                 loginAttempts++;
@@ -4896,6 +4885,17 @@
             document.body.style.overflow = '';
         });
 
+        document.getElementById('skipPhoneBtn').addEventListener('click', () => {
+            document.getElementById('verifyPhonePage').classList.remove('active');
+            document.body.style.overflow = '';
+            var user = auth.currentUser;
+            if (user) {
+                updateNavUserState(user);
+                loadCart();
+            }
+            showNotification('يمكنك تأكيد هاتفك لاحقاً من الملف الشخصي', 'info');
+        });
+
         // تسجيل الخروج
         document.getElementById('navLogoutBtn').addEventListener('click', async () => {
             try {
@@ -4909,7 +4909,7 @@
         // تعديل زر المستخدم في الشريط: إذا مسجل دخول يفتح الملف الشخصي بدلاً من تسجيل الدخول
         document.getElementById('navUserBtn').addEventListener('click', () => {
             const user = auth.currentUser;
-            if (user && phoneVerified) {
+            if (user) {
                 showNotification(`أنت مسجل كـ: ${user.email}`, 'info');
             }
         });
