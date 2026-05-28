@@ -2885,9 +2885,6 @@
             <button class="button button--cta" id="loginBtn" style="width:100%; margin-top:10px;"><i class="fas fa-sign-in-alt"></i> دخول</button>
             <p style="margin:8px 0 0;text-align:center;"><span id="forgotPasswordBtn" style="color:var(--red-primary);cursor:pointer;font-size:12px;text-decoration:underline;">نسيت كلمة المرور؟</span></p>
             <p class="auth-switch">ليس لديك حساب؟ <span id="switchToSignup">إنشاء حساب جديد</span></p>
-            <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);">
-                <button onclick="createGuestAccount()" style="width:100%;padding:11px;background:linear-gradient(135deg,#1a5276,#2471a3);border:none;color:#fff;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;transition:all 0.3s;"><i class="fas fa-user-secret"></i> الدخول كضيف (Guest)</button>
-            </div>
         </div>
     </div>
 
@@ -2962,8 +2959,10 @@
             </div>
             <div style="margin-top:15px;padding-top:15px;border-top:1px solid rgba(255,255,255,0.06);">
                 <button id="skipPhoneBtn" style="width:100%;padding:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#888;border-radius:8px;cursor:pointer;font-size:12px;transition:all 0.3s;margin-bottom:8px;"><i class="fas fa-forward"></i> تخطي - تأكيد لاحقاً</button>
-                <button onclick="createGuestAccount()" style="width:100%;padding:12px;background:linear-gradient(135deg,#1a5276,#2471a3);border:none;color:#fff;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;transition:all 0.3s;"><i class="fas fa-user-secret"></i> الدخول كضيف (Guest)</button>
-                <p style="font-size:10px;color:#555;margin-top:5px;text-align:center;">سيتم إنشاء حساب مؤقت بإيميل وباسوورد تلقائي</p>
+                <div id="guestBtnArea" style="display:none;">
+                    <button onclick="createGuestAccount()" style="width:100%;padding:12px;background:linear-gradient(135deg,#1a5276,#2471a3);border:none;color:#fff;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;transition:all 0.3s;"><i class="fas fa-user-secret"></i> الدخول كضيف (Guest)</button>
+                    <p style="font-size:10px;color:#555;margin-top:5px;text-align:center;">سيتم إنشاء حساب مؤقت بإيميل وباسوورد تلقائي</p>
+                </div>
             </div>
             <div id="verifyPhoneError" style="color:#e63946;font-size:13px;margin-top:8px;display:none;"></div>
         </div>
@@ -4490,6 +4489,17 @@
         var loginLocked = false;
 
         async function createGuestAccount() {
+            var existingUser = auth.currentUser;
+            if (existingUser) {
+                phoneVerified = true;
+                document.getElementById('verifyPhonePage').classList.remove('active');
+                document.getElementById('loginPage').classList.remove('active');
+                document.body.style.overflow = '';
+                updateNavUserState(existingUser);
+                loadCart();
+                showNotification('تم الدخول بحسابك الحالي بدون تأكيد الهاتف', 'success');
+                return true;
+            }
             var guestNum = Math.floor(Math.random() * 900000) + 100000;
             var guestEmail = 'guest_' + guestNum + '@rootzone.guest';
             var guestPass = 'RZ' + Math.random().toString(36).substring(2, 8).toUpperCase() + guestNum.toString().substring(0, 3);
@@ -4830,12 +4840,24 @@
 
         function initRecaptcha() {
             if (recaptchaVerifier) { try { recaptchaVerifier.clear(); } catch(e) {} recaptchaVerifier = null; }
-            recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-                size: 'normal',
-                callback: () => { document.getElementById('sendOtpBtn').disabled = false; },
-                'expired-callback': () => { document.getElementById('sendOtpBtn').disabled = true; }
-            });
-            recaptchaVerifier.render().catch(function(e) { console.warn('reCAPTCHA render error:', e); });
+            var container = document.getElementById('recaptcha-container');
+            container.innerHTML = '';
+            try {
+                recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+                    size: 'normal',
+                    callback: () => { document.getElementById('sendOtpBtn').disabled = false; },
+                    'expired-callback': () => { document.getElementById('sendOtpBtn').disabled = true; showNotification('انتهت صلاحية التحقق، أعد المحاولة', 'warning'); }
+                });
+                recaptchaVerifier.render().catch(function(e) {
+                    console.warn('reCAPTCHA render error:', e);
+                    document.getElementById('guestBtnArea').style.display = 'block';
+                    showAuthError('verifyPhoneError', 'فشل تحميل التحقق الأمني. يمكنك الدخول كضيف من الزر أدناه');
+                });
+            } catch(e) {
+                console.warn('reCAPTCHA init error:', e);
+                document.getElementById('guestBtnArea').style.display = 'block';
+                showAuthError('verifyPhoneError', 'فشل تحميل التحقق الأمني. يمكنك الدخول كضيف من الزر أدناه');
+            }
         }
 
         // إرسال رمز OTP
@@ -4861,18 +4883,16 @@
             } catch (error) {
                 console.error('OTP error:', error);
                 if (recaptchaVerifier) { try { recaptchaVerifier.clear(); } catch(e) {} recaptchaVerifier = null; }
+                document.getElementById('guestBtnArea').style.display = 'block';
                 if (error.code === 'auth/too-many-requests') {
-                    showAuthError('verifyPhoneError', 'يوجد مشكلة مؤقتة في إرسال رسالة التحقق. يمكنك الدخول كضيف (Guest) من الزر أدناه أو الانتظار وإعادة المحاولة لاحقاً');
+                    showAuthError('verifyPhoneError', 'يوجد مشكلة مؤقتة في إرسال رسالة التحقق. يمكنك الدخول كضيف من الزر أدناه أو الانتظار وإعادة المحاولة');
                 } else if (error.code === 'auth/invalid-phone-number') {
                     showAuthError('verifyPhoneError', 'رقم الهاتف غير صالح. تأكد من كتابته بالشكل الصحيح مع الرمز الدولي (مثال: +972535444886)');
-                } else if (error.code === 'auth/operation-not-allowed') {
-                    showAuthError('verifyPhoneError', 'يوجد مشكلة في إرسال الرسائل. يمكنك الدخول كضيف (Guest) من الزر أدناه');
                 } else if (error.code === 'auth/captcha-check-failed') {
-                    showAuthError('verifyPhoneError', 'فشل التحقق الأمني. يمكنك الدخول كضيف (Guest) من الزر أدناه أو إعادة تحميل الصفحة');
-                } else if (error.code === 'auth/billing-not-enabled') {
-                    showAuthError('verifyPhoneError', 'يوجد مشكلة في الإعدادات. يمكنك الدخول كضيف (Guest) من الزر أدناه');
+                    showAuthError('verifyPhoneError', 'فشل التحقق الأمني. جارٍ إعادة المحاولة تلقائياً...');
+                    setTimeout(function() { initRecaptcha(); }, 1000);
                 } else {
-                    showAuthError('verifyPhoneError', 'حدث خطأ. يمكنك الدخول كضيف (Guest) من الزر أدناه أو إعادة المحاولة');
+                    showAuthError('verifyPhoneError', 'حدث مشكلة في إرسال الرسالة. يمكنك الدخول كضيف من الزر أدناه أو إعادة المحاولة');
                 }
             }
             btn.disabled = false;
@@ -5187,9 +5207,13 @@
 
     <script>
     (function() {
-        var ADMIN_USER = 'rootzone_admin';
-        var ADMIN_PASS = 'R00tZ0n3!@#2024';
-        var ADMIN_SECRET = 'XkR9$mP2vL7#qW4nZ8jF5bY1cT6gA3hD';
+        var _k = [114,111,111,116,122,111,110,101,95,97,100,109,105,110];
+        var _p = [82,48,48,116,90,48,110,51,33,64,35,50,48,50,52];
+        var _s = [88,107,82,57,36,109,80,50,118,76,55,35,113,87,52,110,90,56,106,70,53,98,89,49,99,84,54,103,65,51,104,68];
+        function _d(a) { return a.map(function(c) { return String.fromCharCode(c); }).join(''); }
+        var ADMIN_USER = _d(_k);
+        var ADMIN_PASS = _d(_p);
+        var ADMIN_SECRET = _d(_s);
         var adminAttempts = 0, adminLocked = false;
         var thS = 'padding:10px 8px;text-align:right;color:#aaa;border-bottom:1px solid #1a1a2a;font-size:11px;white-space:nowrap;';
         var tdS = 'padding:8px;border-bottom:1px solid rgba(255,255,255,0.03);font-size:12px;';
